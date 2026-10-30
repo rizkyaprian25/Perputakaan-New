@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus, FileSpreadsheet, QrCode, Search, X, CheckCircle2, AlertCircle, Upload, ArrowRight } from "lucide-react";
+import { UserPlus, FileSpreadsheet, QrCode, Search, X, CheckCircle2, AlertCircle, Upload, ArrowRight, RefreshCw, CloudDownload } from "lucide-react";
 
 export default function AdminAnggotaPage() {
   const [daftarAnggota, setDaftarAnggota] = useState<any[]>([]);
@@ -25,6 +25,10 @@ export default function AdminAnggotaPage() {
   // Modal Cetak Kartu
   const [modalCetakBuka, setModalCetakBuka] = useState(false);
   const [selectedAnggota, setSelectedAnggota] = useState<any | null>(null);
+
+  // State Sinkronisasi Netri SMS (Supabase)
+  const [isSyncingNetri, setIsSyncingNetri] = useState(false);
+  const [hasilSyncModal, setHasilSyncModal] = useState<any | null>(null);
 
   const [toast, setToast] = useState<{ tipe: "sukses" | "error"; pesan: string } | null>(null);
 
@@ -143,6 +147,31 @@ export default function AdminAnggotaPage() {
     }
   };
 
+  // Sinkronisasi Langsung dari Netri SMS (Supabase Cloud)
+  const handleSyncNetri = async () => {
+    if (isSyncingNetri) return;
+
+    setIsSyncingNetri(true);
+    try {
+      const res = await fetch("/api/v1/admin/anggota/sync-netri", {
+        method: "POST",
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.sukses) {
+        throw new Error(json.pesan || "Gagal melakukan sinkronisasi dengan Netri SMS");
+      }
+
+      setHasilSyncModal(json.data);
+      tampilkanToast(json.pesan, "sukses");
+      muatData();
+    } catch (err: any) {
+      tampilkanToast(err.message, "error");
+    } finally {
+      setIsSyncingNetri(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-[1440px]">
       {/* Toast Alert */}
@@ -173,6 +202,18 @@ export default function AdminAnggotaPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleSyncNetri}
+            disabled={isSyncingNetri}
+            title="Tarik & sinkronkan data siswa dari Supabase Netri SMS"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold transition-colors min-h-[44px] disabled:opacity-50"
+          >
+            <CloudDownload
+              className={`w-4 h-4 text-group-pelajaran ${isSyncingNetri ? "animate-bounce" : ""}`}
+            />
+            <span>{isSyncingNetri ? "Menyinkronkan..." : "Sinkronisasi Netri SMS"}</span>
+          </button>
+
           <button
             onClick={() => {
               setDataPratinjau(null);
@@ -498,6 +539,52 @@ export default function AdminAnggotaPage() {
               className="w-full py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90"
             >
               Cetak Kartu Sekarang
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: LAPORAN HASIL SINKRONISASI NETRI SMS                             */}
+      {/* ========================================================================= */}
+      {hasilSyncModal && (
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-status-tersedia/10 text-status-tersedia flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+
+            <div>
+              <h3 className="font-serif font-bold text-xl text-ink">Sinkronisasi Netri SMS Berhasil</h3>
+              <p className="text-xs text-ink-muted mt-1">
+                Data siswa dari cloud Supabase telah disinkronkan ke server lokal perpustakaan.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 py-2">
+              <div className="p-3 rounded-lg bg-paper-sunken">
+                <span className="font-mono text-[11px] text-ink-muted block">Siswa Baru</span>
+                <strong className="font-mono text-xl text-ink">{hasilSyncModal.baru}</strong>
+              </div>
+              <div className="p-3 rounded-lg bg-status-tersedia/10 text-status-tersedia">
+                <span className="font-mono text-[11px] block">Diperbarui</span>
+                <strong className="font-mono text-xl">{hasilSyncModal.diperbarui}</strong>
+              </div>
+              <div className="p-3 rounded-lg bg-danger/10 text-danger">
+                <span className="font-mono text-[11px] block">Nonaktif/Lulus</span>
+                <strong className="font-mono text-xl">{hasilSyncModal.dinonaktifkan}</strong>
+              </div>
+            </div>
+
+            <p className="text-xs text-ink-muted font-mono">
+              Total {hasilSyncModal.totalDitarik} data siswa diproses dari Netri SMS.
+            </p>
+
+            <button
+              onClick={() => setHasilSyncModal(null)}
+              className="w-full py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 min-h-[44px]"
+            >
+              Selesai & Tutup
             </button>
           </div>
         </div>
