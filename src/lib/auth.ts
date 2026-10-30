@@ -11,8 +11,14 @@ import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 import { PeranPengguna } from "@/contracts/konstanta";
 
-export const NAMA_COOKIE_SESI =
-  process.env.NODE_ENV === "production" ? "__Host-sid" : "sid";
+// Pengaturan Cookie Sesi:
+// Di server lokal/LAN sekolah HTTP, secure harus false dan nama cookie 'sid' agar tidak ditolak Chrome.
+// Jika di hosting HTTPS publik, aktifkan COOKIE_SECURE=true untuk menyalakan __Host- prefix.
+export const APAKAH_COOKIE_SECURE =
+  process.env.COOKIE_SECURE === "true" ||
+  (process.env.NODE_ENV === "production" && process.env.USE_HTTPS === "true");
+
+export const NAMA_COOKIE_SESI = APAKAH_COOKIE_SECURE ? "__Host-sid" : "sid";
 
 // Buat token acak CSPRNG (256-bit)
 export function bangkitkanTokenSesi(): string {
@@ -27,7 +33,11 @@ export function hashTokenSesi(token: string): string {
 // Cek dan ambil data sesi pengguna aktif dari cookies
 export async function ambilPenggunaDariSesi() {
   const cookieStore = await cookies();
-  const token = cookieStore.get(NAMA_COOKIE_SESI)?.value;
+  // Periksa kedua kemungkinan nama cookie agar kompatibel lintas lingkungan
+  const token =
+    cookieStore.get("sid")?.value ||
+    cookieStore.get("__Host-sid")?.value ||
+    cookieStore.get(NAMA_COOKIE_SESI)?.value;
 
   if (!token) return null;
 

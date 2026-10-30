@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
   }
 
   const respon = responSukses(null, "Sesi berhasil diakhiri");
+  respon.cookies.delete("sid");
+  respon.cookies.delete("__Host-sid");
   respon.cookies.delete(NAMA_COOKIE_SESI);
   return respon;
 }

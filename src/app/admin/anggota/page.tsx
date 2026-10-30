@@ -41,6 +41,10 @@ export default function AdminAnggotaPage() {
     try {
       setLoading(true);
       const res = await fetch("/api/v1/admin/anggota");
+      if (res.status === 401) {
+        window.location.href = "/admin/login?alihkan=/admin/anggota";
+        return;
+      }
       const json = await res.json();
       if (json.sukses) setDaftarAnggota(json.data);
     } catch (e) {
@@ -156,6 +160,14 @@ export default function AdminAnggotaPage() {
       const res = await fetch("/api/v1/admin/anggota/sync-netri", {
         method: "POST",
       });
+
+      if (res.status === 401) {
+        tampilkanToast("Sesi telah berakhir atau belum masuk. Mengalihkan ke login...", "error");
+        setTimeout(() => {
+          window.location.href = "/admin/login?alihkan=/admin/anggota";
+        }, 1200);
+        return;
+      }
 
       const json = await res.json();
       if (!res.ok || !json.sukses) {

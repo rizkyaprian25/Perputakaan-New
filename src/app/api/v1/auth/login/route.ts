@@ -10,7 +10,7 @@ import { pengguna, sesi } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { LoginSkema } from "@/contracts/skema";
 import { responSukses, responGalat } from "@/lib/api-response";
-import { bangkitkanTokenSesi, hashTokenSesi, NAMA_COOKIE_SESI } from "@/lib/auth";
+import { bangkitkanTokenSesi, hashTokenSesi, NAMA_COOKIE_SESI, APAKAH_COOKIE_SECURE } from "@/lib/auth";
 import { tulisLogAudit } from "@/lib/audit";
 
 // Dummy hash Argon2id untuk timing-attack mitigation saat user tidak ditemukan
@@ -141,8 +141,8 @@ export async function POST(req: NextRequest) {
       name: NAMA_COOKIE_SESI,
       value: tokenSesi,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: APAKAH_COOKIE_SECURE,
+      sameSite: "lax",
       path: "/",
       maxAge: absHours * 3600,
     });

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Shield, KeyRound, User, AlertCircle, ArrowRight } from "lucide-react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { Shield, KeyRound, User, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 
-export default function AdminLoginPage() {
-  const router = useRouter();
+function LoginForm() {
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [kataSandi, setKataSandi] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,9 +32,9 @@ export default function AdminLoginPage() {
         throw new Error(json.pesan || "Username atau kata sandi tidak cocok.");
       }
 
-      // Login berhasil -> Arahkan ke panel utama
-      router.push("/admin");
-      router.refresh();
+      // Login berhasil -> Arahkan ke target tujuan atau panel admin
+      const targetUrl = searchParams.get("alihkan") || "/admin";
+      window.location.href = targetUrl;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal masuk ke sistem";
       setErrorMsg(msg);
@@ -113,29 +113,47 @@ export default function AdminLoginPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting || !username.trim() || !kataSandi.trim()}
-            className="w-full py-3 px-4 rounded-md bg-ink text-paper font-semibold text-sm inline-flex items-center justify-center gap-2 hover:bg-ink/90 disabled:opacity-50 transition-colors min-h-[44px]"
+            disabled={isSubmitting}
+            className="w-full py-2.5 px-4 rounded-md bg-ink text-paper text-sm font-medium hover:bg-ink/90 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 min-h-[44px] shadow-sm"
           >
             {isSubmitting ? (
-              <span>Memverifikasi kredensial...</span>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Memverifikasi Akun...</span>
+              </>
             ) : (
               <>
-                <span>Masuk ke Panel Staf</span>
+                <span>Masuk ke Workstation</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
+        {/* Navigasi Tambahan */}
         <div className="pt-4 border-t border-line text-center">
           <Link
             href="/"
-            className="text-xs text-ink-muted hover:text-ink transition-colors font-medium inline-block"
+            className="text-xs text-ink-muted hover:text-ink font-medium transition-colors"
           >
             ← Kembali ke Katalog Publik Siswa
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-paper flex items-center justify-center p-6">
+          <Loader2 className="w-8 h-8 animate-spin text-ink" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -2,6 +2,28 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Cek keberadaan cookie sesi (sid atau __Host-sid)
+  const token =
+    request.cookies.get("sid")?.value ||
+    request.cookies.get("__Host-sid")?.value;
+
+  // 1. Proteksi Rute Admin: Alihkan ke halaman login jika belum memiliki sesi
+  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
+    if (!token) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("alihkan", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 2. Jika sudah memiliki sesi dan membuka halaman login, alihkan langsung ke dashboard
+  if (pathname === "/admin/login" && token) {
+    const adminUrl = new URL("/admin", request.url);
+    return NextResponse.redirect(adminUrl);
+  }
+
   const response = NextResponse.next();
 
   // 10 Standar Keamanan: Security Headers Defensif

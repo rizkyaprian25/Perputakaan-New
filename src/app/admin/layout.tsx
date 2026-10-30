@@ -1,16 +1,18 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Repeat,
   BookMarked,
   Users,
   Settings,
-  ShieldCheck,
   LogOut,
   BookOpen,
   Monitor,
+  Loader2,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -18,6 +20,67 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const [penggunaAktif, setPenggunaAktif] = useState<{
+    id: string;
+    username: string;
+    peran: string;
+  } | null>(null);
+  const [sedangMemuatAuth, setSedangMemuatAuth] = useState(true);
+
+  // Jangan jalankan pengecekan jika sedang di halaman login
+  const isLoginPage = pathname === "/admin/login";
+
+  useEffect(() => {
+    if (isLoginPage) {
+      setSedangMemuatAuth(false);
+      return;
+    }
+
+    let isMounted = true;
+    const periksaSesi = async () => {
+      try {
+        const res = await fetch("/api/v1/auth/me");
+        if (!res.ok) {
+          window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
+          return;
+        }
+
+        const json = await res.json();
+        if (json.sukses && json.data && isMounted) {
+          setPenggunaAktif(json.data);
+          setSedangMemuatAuth(false);
+        } else {
+          window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
+        }
+      } catch {
+        window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
+      }
+    };
+
+    periksaSesi();
+    return () => {
+      isMounted = false;
+    };
+  }, [pathname, isLoginPage]);
+
+  // Jika halaman login, langsung render anak tanpa sidebar admin
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  // Tampilkan layar loading saat memverifikasi sesi
+  if (sedangMemuatAuth) {
+    return (
+      <div className="min-h-screen bg-paper flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3 text-ink-muted">
+          <Loader2 className="w-8 h-8 animate-spin text-ink" />
+          <p className="text-sm font-medium">Memverifikasi sesi staf perpustakaan...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-paper flex">
       {/* 1. Sidebar Tetap Desktop (Permanen di Sisi Kiri) */}
@@ -42,7 +105,11 @@ export default function AdminLayout({
           <nav className="space-y-1.5">
             <Link
               href="/admin"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-ink hover:bg-paper-sunken transition-colors min-h-[44px]"
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                pathname === "/admin"
+                  ? "bg-paper-sunken text-ink font-semibold"
+                  : "text-ink hover:bg-paper-sunken"
+              }`}
             >
               <LayoutDashboard className="w-4 h-4 text-ink-muted" />
               <span>Ringkasan Dashboard</span>
@@ -50,7 +117,11 @@ export default function AdminLayout({
 
             <Link
               href="/admin/sirkulasi"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-ink hover:bg-paper-sunken transition-colors min-h-[44px]"
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                pathname.startsWith("/admin/sirkulasi")
+                  ? "bg-paper-sunken text-ink font-semibold"
+                  : "text-ink hover:bg-paper-sunken"
+              }`}
             >
               <Repeat className="w-4 h-4 text-ink-muted" />
               <span>Meja Sirkulasi (Pinjam/Kembali)</span>
@@ -58,7 +129,11 @@ export default function AdminLayout({
 
             <Link
               href="/admin/buku"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-ink hover:bg-paper-sunken transition-colors min-h-[44px]"
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                pathname.startsWith("/admin/buku")
+                  ? "bg-paper-sunken text-ink font-semibold"
+                  : "text-ink hover:bg-paper-sunken"
+              }`}
             >
               <BookMarked className="w-4 h-4 text-ink-muted" />
               <span>Katalog & Eksemplar</span>
@@ -66,7 +141,11 @@ export default function AdminLayout({
 
             <Link
               href="/admin/anggota"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-ink hover:bg-paper-sunken transition-colors min-h-[44px]"
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                pathname.startsWith("/admin/anggota")
+                  ? "bg-paper-sunken text-ink font-semibold"
+                  : "text-ink hover:bg-paper-sunken"
+              }`}
             >
               <Users className="w-4 h-4 text-ink-muted" />
               <span>Data Anggota Siswa</span>
@@ -74,7 +153,11 @@ export default function AdminLayout({
 
             <Link
               href="/admin/pengaturan"
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-ink hover:bg-paper-sunken transition-colors min-h-[44px]"
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                pathname.startsWith("/admin/pengaturan")
+                  ? "bg-paper-sunken text-ink font-semibold"
+                  : "text-ink hover:bg-paper-sunken"
+              }`}
             >
               <Settings className="w-4 h-4 text-ink-muted" />
               <span>Pengaturan Sistem</span>
@@ -86,12 +169,16 @@ export default function AdminLayout({
         <div className="pt-6 border-t border-line space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-status-tersedia/15 text-status-tersedia flex items-center justify-center font-bold text-xs">
-                A
+              <div className="w-8 h-8 rounded-full bg-status-tersedia/15 text-status-tersedia flex items-center justify-center font-bold text-xs uppercase">
+                {penggunaAktif?.username?.charAt(0) || "P"}
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-ink leading-tight">Admin Utama</p>
-                <span className="font-mono text-[10px] text-ink-muted">Petugas Perpustakaan</span>
+                <p className="text-xs font-bold text-ink leading-tight capitalize">
+                  {penggunaAktif?.username || "Petugas"}
+                </p>
+                <span className="font-mono text-[10px] text-ink-muted uppercase">
+                  {penggunaAktif?.peran === "admin" ? "Administrator" : "Petugas"}
+                </span>
               </div>
             </div>
 
