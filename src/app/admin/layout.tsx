@@ -42,6 +42,8 @@ export default function AdminLayout({
       try {
         const res = await fetch("/api/v1/auth/me");
         if (!res.ok) {
+          document.cookie = "sid=; path=/; max-age=0";
+          document.cookie = "__Host-sid=; path=/; max-age=0";
           window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
           return;
         }
@@ -51,9 +53,13 @@ export default function AdminLayout({
           setPenggunaAktif(json.data);
           setSedangMemuatAuth(false);
         } else {
+          document.cookie = "sid=; path=/; max-age=0";
+          document.cookie = "__Host-sid=; path=/; max-age=0";
           window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
         }
       } catch {
+        document.cookie = "sid=; path=/; max-age=0";
+        document.cookie = "__Host-sid=; path=/; max-age=0";
         window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
       }
     };
