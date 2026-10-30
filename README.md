@@ -1,63 +1,121 @@
 # Bilik Baca
 
-Sistem informasi dan manajemen perpustakaan sekolah yang berfokus pada kemudahan operasional harian: katalog ramah siswa, absensi kunjungan berbasis QR, dan sirkulasi peminjaman cepat untuk staf.
+Sistem informasi dan manajemen perpustakaan sekolah yang dirancang untuk kebutuhan operasional harian: katalog publik ramah siswa, kiosk presensi mandiri berbasis QR code, meja sirkulasi cepat untuk staf, serta integrasi sinkronisasi data siswa dari Netri SMS.
 
 ---
 
-## Gambaran Fitur
+## Fitur Utama
 
-* **Katalog Siswa:** Memisahkan buku bacaan umum (Hiburan) dan buku pelajaran sekolah secara tegas. Setiap judul menampilkan status ketersediaan fisik yang diperbarui otomatis.
-* **Kiosk Kunjungan:** Pencatatan kehadiran mandiri di pintu masuk perpustakaan melalui pemindaian QR kartu siswa atau pengisian nomor induk manual.
-* **Sirkulasi Cepat:** Peminjaman dan pengembalian buku berbasis kode eksemplar fisik dengan perlindungan tingkat basis data terhadap peminjaman ganda.
-* **Pengadaan Koleksi:** Pencarian metadata buku gratis dari Google Books dan Open Library, lengkap dengan opsi penambahan manual dan penyeragaman format sampul.
-* **Pengelolaan Anggota:** Dukungan impor data siswa massal melalui lembar kerja Excel/CSV dengan pratinjau validasi sebelum disimpan.
+- **Katalog Publik (Widescreen):** Navigasi visual memisahkan kelompok Penunjang (buku fiksi, novel, ensiklopedia) dan Utama (buku paket pelajaran kurikulum). Menampilkan ketersediaan eksemplar fisik secara riil.
+- **Kiosk Presensi Mandiri:** Layar presensi pengunjung di pintu perpustakaan. Menerima pemindaian QR kartu siswa (kamera/scanner barcode USB) atau input NIS manual dengan pencegahan absen ganda di hari yang sama.
+- **Meja Sirkulasi Cepat:** Transaksi peminjaman dan pengembalian buku dengan perlindungan anti-pinjam-ganda langsung pada tingkat basis data (MySQL generated column `STORED` + `UNIQUE INDEX`).
+- **Integrasi Master Data Netri SMS:** Tombol sinkronisasi satu klik untuk menarik master data siswa dan kelas dari Netri SMS (Supabase Cloud). Otomatis memperbarui status siswa keluar/lulus menjadi nonaktif tanpa menghapus riwayat peminjaman lama.
+- **Katalog Eksternal & ISBN:** Pencarian dan pengisian otomatis metadata buku dari Google Books dan Open Library dengan sanitasi teks anti-XSS.
+- **Impor Massal Excel:** Unggah berkas Excel data anggota dengan pratinjau validasi sebelum disimpan ke basis data.
 
 ---
 
 ## Kebutuhan Sistem
 
-* **Node.js:** Versi 20 atau 24 LTS
-* **Basis Data:** MySQL 8.0+ atau MariaDB 10.6+ (kompatibel penuh dengan instalasi Laragon di Windows)
-* **Web Server (Produksi):** Nginx sebagai reverse proxy ke port Next.js
+- **Node.js:** Versi 20 atau 22 LTS
+- **Basis Data:** MySQL 8.0+ atau MariaDB 10.6+ (kompatibel penuh dengan instalasi Laragon di Windows)
+- **Web Server:** Next.js 15 (dapat dipasangkan dengan Nginx sebagai reverse proxy pada port 3000)
 
 ---
 
-## Panduan Instalasi Lokal
+## Panduan Instalasi & Pengoperasian
 
-1. **Persiapan Basis Data (Laragon):**
-   Nyalakan layanan MySQL melalui Laragon (port default 3306), lalu siapkan database dan akun aplikasi:
-   ```sql
-   CREATE DATABASE perpus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'perpus_app'@'127.0.0.1' IDENTIFIED BY 'KataSandiAnda';
-   GRANT ALL PRIVILEGES ON perpus.* TO 'perpus_app'@'127.0.0.1';
-   FLUSH PRIVILEGES;
-   ```
+### 1. Persiapan Basis Data (Laragon)
+Nyalakan layanan MySQL melalui Laragon (klik **Start All**). Buka terminal MySQL dan jalankan perintah:
 
-2. **Pasang Dependensi Proyek:**
-   ```bash
-   npm install
-   ```
+```sql
+CREATE DATABASE perpus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'perpus_app'@'127.0.0.1' IDENTIFIED BY 'BilikBacaSecret2026!';
+GRANT ALL PRIVILEGES ON perpus.* TO 'perpus_app'@'127.0.0.1';
+FLUSH PRIVILEGES;
+```
 
-3. **Pengaturan Berkas Lingkungan:**
-   Salin `.env.example` menjadi `.env` dan sesuaikan kredensial basis data Anda:
-   ```bash
-   cp .env.example .env
-   ```
+### 2. Pemasangan Dependensi
+```bash
+npm install
+```
 
-4. **Eksekusi Migrasi & Data Awal:**
-   ```bash
-   npm run db:migrate
-   npm run db:seed
-   ```
+### 3. Konfigurasi Lingkungan (`.env`)
+Salin berkas `.env.example` menjadi `.env`:
+```bash
+cp .env.example .env
+```
+Pastikan variabel lingkungan telah terisi:
+```env
+DATABASE_URL=mysql://perpus_app:BilikBacaSecret2026!@127.0.0.1:3306/perpus
+APP_SECRET=bilik-baca-super-secret-key-32-chars-minimum!
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NETRI_SUPABASE_URL=https://lnkjzhnrstffvakkzoiy.supabase.co
+NETRI_SUPABASE_KEY=eyJhbGci...
+```
 
-5. **Jalankan Server Pengembangan:**
-   ```bash
-   npm run dev
-   ```
-   Buka peramban di `http://localhost:3000`.
+### 4. Migrasi & Seed Data Awal
+Jalankan skrip migrasi Drizzle untuk membuat 11 tabel relasional dan constraint transaksi:
+```bash
+npm run db:migrate
+npm run db:seed
+```
+*Akun bawaan admin:*
+- **Username:** `admin`
+- **Kata Sandi:** `AdminBilikBaca2026!`
+
+### 5. Menjalankan Server
+```bash
+# Mode pengembangan
+npm run dev
+
+# Mode produksi
+npm run build
+npm run start
+```
+Aplikasi dapat diakses melalui peramban:
+- **Katalog Publik:** `http://localhost:3000`
+- **Kiosk Presensi:** `http://localhost:3000/kiosk`
+- **Dashboard Admin:** `http://localhost:3000/admin` (Login: `http://localhost:3000/admin/login`)
 
 ---
 
-## Lisensi & Hak Penggunaan
+## Pengujian Mandiri (*Smoke Test*)
 
-Hak Cipta © 2026 Tim Pengembang Bilik Baca. Dilisensikan untuk penggunaan institusi pendidikan.
+Proyek ini dilengkapi dengan skrip uji verifikasi invariant sirkulasi atomik dan integritas data:
+```bash
+npm run test:smoke
+```
+Uji mandiri mencakup 6 pengujian kritis:
+1. Verifikasi kelengkapan master data siswa hasil sinkronisasi Netri SMS (880+ siswa).
+2. Pembuatan buku dan eksemplar uji sirkulasi.
+3. Transaksi peminjaman atomik dan penguncian status eksemplar.
+4. Uji invariant anti-pinjam-ganda pada tingkat basis data (`ER_DUP_ENTRY`).
+5. Transaksi pengembalian buku dan pembebasan eksemplar.
+6. Idempotensi presensi harian kiosk pengunjung (`uq_kunjungan_harian`).
+
+---
+
+## Struktur Rute Aplikasi
+
+```text
+src/app/
+├── (katalog)/
+│   ├── page.tsx                  # Beranda Katalog 2 Kelompok
+│   └── katalog/[kelompok]/       # Daftar Buku per Kelompok
+├── kiosk/
+│   └── page.tsx                  # Kiosk Presensi Mandiri Siswa
+├── admin/
+│   ├── login/                    # Autentikasi Staf (Argon2id)
+│   ├── buku/                     # Manajemen Koleksi & ISBN Lookup
+│   ├── sirkulasi/                # Transaksi Meja Sirkulasi
+│   ├── anggota/                  # Kelola Anggota & Sinkronisasi Netri SMS
+│   └── pengaturan/               # Konfigurasi Sistem
+└── api/v1/                       # API Handlers Terproteksi
+```
+
+---
+
+## Lisensi
+
+Hak Cipta © 2026 Perpustakaan Sekolah Bilik Baca. Dilisensikan untuk penggunaan institusi pendidikan.
