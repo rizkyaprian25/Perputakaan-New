@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Token Warna Bilik Baca (Mode Terang) */
+  --color-paper: #F5F0E6;
+  --color-paper-sunken: #EBE4D5;
+  --color-surface: #FFFDF8;
+  --color-line: #D6CDB9;
+  --color-ink: #1C1A17;
+  --color-ink-muted: #5A554B;
+  --color-group-hiburan: #B8381A;
+  --color-group-pelajaran: #1F3FA8;
+  --color-status-tersedia: #2F6B3A;
+  --color-status-dipinjam: #8A5A00;
+  --color-danger: #A3201B;
+  --color-on-group: #FFFFFF;
+
+  /* Jarak & Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-ibm-plex-sans), system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  /* Kepatuhan Aksesibilitas: Cincin fokus tidak boleh hilang */
+  *:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+}
+
+/* Animasi & Transisi Lembut */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
