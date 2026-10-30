@@ -6,7 +6,7 @@
 import crypto from "crypto";
 import { db } from "@/db";
 import { pengguna, sesi } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 import { PeranPengguna } from "@/contracts/konstanta";
@@ -61,8 +61,8 @@ export async function ambilPenggunaDariSesi() {
       and(
         eq(sesi.tokenHash, tokenHash),
         eq(pengguna.aktif, true),
-        sql`${sesi.kedaluwarsaIdle} > ${now}`,
-        sql`${sesi.kedaluwarsaAbsolut} > ${now}`
+        gt(sesi.kedaluwarsaIdle, now),
+        gt(sesi.kedaluwarsaAbsolut, now)
       )
     );
 
