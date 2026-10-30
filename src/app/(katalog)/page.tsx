@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Sparkles, GraduationCap } from "lucide-react";
+import { ArrowRight, BookOpen, Sparkles, GraduationCap, Compass } from "lucide-react";
 import { db } from "@/db";
 import { buku, kategori, eksemplar } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -9,7 +9,6 @@ import { BookSpineTick } from "@/components/ui/BookSpineTick";
 export const dynamic = "force-dynamic";
 
 export default async function KatalogBerandaPage() {
-  // Ambil ringkasan jumlah buku per kelompok
   let jumlahHiburan = 0;
   let jumlahPelajaran = 0;
   let daftarBuku: Array<{
@@ -38,7 +37,6 @@ export default async function KatalogBerandaPage() {
       if (c.kelompok === "pelajaran") jumlahPelajaran = Number(c.total);
     });
 
-    // Ambil sampel buku untuk ditampilkan di beranda
     const rawBooks = await db
       .select({
         id: buku.id,
@@ -71,110 +69,116 @@ export default async function KatalogBerandaPage() {
 
   return (
     <div className="space-y-12">
-      {/* 1. Hero: Dua Pintu Masuk Besar (Hiburan vs Pelajaran) */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Blok Hiburan */}
+      {/* 1. Hero Desktop Widescreen: Dua Pintu Masuk Berdampingan */}
+      <section className="grid grid-cols-2 gap-8">
+        {/* Panel Kiri: Hiburan (Jingga-Bata #B8381A) */}
         <Link
           href="/katalog/hiburan"
-          className="group relative bg-group-hiburan text-on-group rounded-lg p-6 md:p-8 flex flex-col justify-between min-h-[220px] md:min-h-[260px] shadow-sm hover:brightness-105 transition-all overflow-hidden"
+          className="group relative bg-group-hiburan text-on-group rounded-xl p-10 flex flex-col justify-between min-h-[300px] shadow-sm hover:shadow-md hover:brightness-105 transition-all overflow-hidden"
         >
-          <div className="space-y-2 z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-mono">
+          <div className="space-y-3 z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-mono backdrop-blur-sm">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Kelompok Bacaan</span>
+              <span>Kelompok Koleksi 1</span>
             </div>
-            <h2 className="font-serif text-3xl md:text-5xl font-semibold tracking-tight">
-              Hiburan
+            <h2 className="font-serif text-5xl font-semibold tracking-tight text-white leading-none">
+              Bacaan Hiburan
             </h2>
-            <p className="text-white/80 text-sm max-w-sm">
-              Novel sastra, cerita pendek, komik, biografi inspiratif, dan sains populer.
+            <p className="text-white/85 text-base max-w-md leading-relaxed pt-2">
+              Koleksi novel sastra, kumpulan cerpen, komik grafis, biografi tokoh, dan ensiklopedia sains populer.
             </p>
           </div>
 
-          <div className="flex items-center justify-between pt-6 border-t border-white/20 z-10">
-            <span className="font-mono text-xs tracking-wider uppercase">
-              {jumlahHiburan} Judul Koleksi
+          <div className="flex items-center justify-between pt-8 border-t border-white/25 z-10">
+            <span className="font-mono text-sm tracking-widest uppercase text-white/90">
+              {jumlahHiburan} Judul Buku Tersedia
             </span>
-            <span className="inline-flex items-center gap-1 text-sm font-medium group-hover:translate-x-1 transition-transform">
-              Jelajahi <ArrowRight className="w-4 h-4" />
+            <span className="inline-flex items-center gap-2 text-base font-semibold group-hover:translate-x-2 transition-transform">
+              Buka Katalog <ArrowRight className="w-5 h-5" />
             </span>
           </div>
 
-          {/* Hiasan Punggung Buku Halus di Belakang */}
+          {/* Hiasan Punggung Buku Tekstur Desktop */}
           <div
-            className="absolute -right-6 -bottom-6 w-36 h-36 rounded-full bg-white/5 pointer-events-none"
+            className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"
             aria-hidden="true"
           />
         </Link>
 
-        {/* Blok Pelajaran */}
+        {/* Panel Kanan: Pelajaran (Biru Tinta #1F3FA8) */}
         <Link
           href="/katalog/pelajaran"
-          className="group relative bg-group-pelajaran text-on-group rounded-lg p-6 md:p-8 flex flex-col justify-between min-h-[220px] md:min-h-[260px] shadow-sm hover:brightness-105 transition-all overflow-hidden"
+          className="group relative bg-group-pelajaran text-on-group rounded-xl p-10 flex flex-col justify-between min-h-[300px] shadow-sm hover:shadow-md hover:brightness-105 transition-all overflow-hidden"
         >
-          <div className="space-y-2 z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-mono">
+          <div className="space-y-3 z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-mono backdrop-blur-sm">
               <GraduationCap className="w-3.5 h-3.5" />
-              <span>Kelompok Belajar</span>
+              <span>Kelompok Koleksi 2</span>
             </div>
-            <h2 className="font-serif text-3xl md:text-5xl font-semibold tracking-tight">
-              Pelajaran
+            <h2 className="font-serif text-5xl font-semibold tracking-tight text-white leading-none">
+              Buku Pelajaran
             </h2>
-            <p className="text-white/80 text-sm max-w-sm">
-              Buku teks kurikulum merdeka, referensi mata pelajaran, dan pegangan materi kelas.
+            <p className="text-white/85 text-base max-w-md leading-relaxed pt-2">
+              Buku teks kurikulum merdeka, modul pelajaran, dan materi persiapan ujian per tingkat kelas.
             </p>
           </div>
 
-          <div className="flex items-center justify-between pt-6 border-t border-white/20 z-10">
-            <span className="font-mono text-xs tracking-wider uppercase">
-              {jumlahPelajaran} Judul Koleksi
+          <div className="flex items-center justify-between pt-8 border-t border-white/25 z-10">
+            <span className="font-mono text-sm tracking-widest uppercase text-white/90">
+              {jumlahPelajaran} Judul Buku Tersedia
             </span>
-            <span className="inline-flex items-center gap-1 text-sm font-medium group-hover:translate-x-1 transition-transform">
-              Jelajahi <ArrowRight className="w-4 h-4" />
+            <span className="inline-flex items-center gap-2 text-base font-semibold group-hover:translate-x-2 transition-transform">
+              Buka Katalog <ArrowRight className="w-5 h-5" />
             </span>
           </div>
 
           <div
-            className="absolute -right-6 -bottom-6 w-36 h-36 rounded-full bg-white/5 pointer-events-none"
+            className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"
             aria-hidden="true"
           />
         </Link>
       </section>
 
-      {/* 2. Daftar Koleksi Terbaru & Ketersediaan */}
+      {/* 2. Bagian Koleksi Pilihan di Monitor Komputer */}
       <section className="space-y-6">
         <div className="flex items-end justify-between border-b border-line pb-4">
           <div>
-            <h3 className="font-serif text-2xl font-semibold text-ink">Koleksi Pilihan di Rak</h3>
-            <p className="text-ink-muted text-sm mt-0.5">
-              Lihat status ketersediaan buku secara langsung sebelum datang ke meja sirkulasi.
-            </p>
+            <div className="flex items-center gap-2 text-xs font-mono uppercase text-ink-muted mb-1">
+              <Compass className="w-4 h-4 text-ink-muted" />
+              <span>Rak Buku Perpustakaan</span>
+            </div>
+            <h3 className="font-serif text-3xl font-semibold text-ink">Koleksi Terpopuler</h3>
           </div>
+          <p className="text-sm text-ink-muted">
+            Status ketersediaan eksemplar terhubung langsung ke basis data server sekolah.
+          </p>
         </div>
 
         {daftarBuku.length === 0 ? (
-          /* Empty State */
-          <div className="bg-surface border border-line rounded-lg p-10 text-center">
-            <BookOpen className="w-8 h-8 text-ink-muted mx-auto mb-2" />
-            <h4 className="font-serif text-lg font-semibold text-ink mb-1">
-              Katalog Belum Memiliki Buku
+          <div className="bg-surface border border-line rounded-xl p-16 text-center shadow-sm">
+            <BookOpen className="w-12 h-12 text-ink-muted mx-auto mb-3" />
+            <h4 className="font-serif text-xl font-semibold text-ink mb-1">
+              Katalog Perpustakaan Belum Terisi
             </h4>
-            <p className="text-ink-muted text-sm max-w-sm mx-auto">
-              Petugas belum memasukkan data buku ke dalam sistem. Silakan cek kembali nanti.
+            <p className="text-ink-muted text-sm max-w-md mx-auto">
+              Petugas perpustakaan belum memasukkan data buku. Buka Portal Admin untuk menambah buku baru.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+          <div className="grid grid-cols-6 gap-6">
             {daftarBuku.map((item) => (
-              <div key={item.id} className="flex flex-col gap-2 group">
+              <div
+                key={item.id}
+                className="flex flex-col gap-2.5 p-3.5 rounded-lg bg-surface border border-line/80 hover:border-ink/40 hover:shadow-sm transition-all group"
+              >
                 <BookCover
                   judul={item.judul}
                   penulis={item.penulis}
                   kelompok={item.kelompok}
-                  className="group-hover:shadow-md transition-shadow"
+                  className="group-hover:scale-[1.02] transition-transform duration-200"
                 />
                 <div className="flex flex-col gap-1 mt-1">
-                  <span className="font-mono text-[10px] text-ink-muted uppercase">
+                  <span className="font-mono text-[10px] text-ink-muted uppercase tracking-wider">
                     {item.kategoriNama}
                   </span>
                   <h4 className="font-serif font-semibold text-sm leading-tight text-ink line-clamp-2">
@@ -182,11 +186,10 @@ export default async function KatalogBerandaPage() {
                   </h4>
                   <p className="text-xs text-ink-muted line-clamp-1">{item.penulis}</p>
 
-                  {/* Penanda Balok Punggung Buku */}
                   <BookSpineTick
                     total={item.totalEksemplar}
                     tersedia={item.tersediaEksemplar}
-                    className="mt-1"
+                    className="mt-2 pt-2 border-t border-line/60"
                   />
                 </div>
               </div>

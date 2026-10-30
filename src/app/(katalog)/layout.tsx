@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Search, QrCode, Shield, Compass } from "lucide-react";
+import { BookOpen, Search, QrCode, Shield, Clock } from "lucide-react";
 
 export default function KatalogLayout({
   children,
@@ -7,98 +7,103 @@ export default function KatalogLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-paper text-ink pb-20 md:pb-0">
-      {/* Header Publik */}
-      <header className="sticky top-0 z-40 bg-paper/95 backdrop-blur-sm border-b border-line px-4 md:px-8 py-3.5 transition-all">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-md bg-ink text-paper flex items-center justify-center font-serif font-bold text-lg">
+    <div className="min-h-screen flex flex-col bg-paper text-ink">
+      {/* Header Desktop Widescreen */}
+      <header className="sticky top-0 z-40 bg-paper/95 backdrop-blur-md border-b border-line px-8 py-4 shadow-sm">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-8">
+          {/* Logo & Identitas Perpustakaan */}
+          <Link href="/" className="flex items-center gap-3 shrink-0 group">
+            <div className="w-10 h-10 rounded-md bg-ink text-paper flex items-center justify-center font-serif font-bold text-xl shadow-sm">
               B
             </div>
             <div>
-              <span className="font-serif font-semibold text-xl tracking-tight block leading-none">
+              <span className="font-serif font-semibold text-2xl tracking-tight block leading-none text-ink">
                 Bilik Baca
               </span>
-              <span className="font-mono text-[11px] text-ink-muted tracking-wide block mt-0.5">
-                Perpustakaan Sekolah
+              <span className="font-mono text-xs text-ink-muted tracking-wide block mt-1">
+                Katalog Perpustakaan Sekolah
               </span>
             </div>
           </Link>
 
-          {/* Navigasi Desktop */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-            <Link href="/" className="hover:text-ink-muted transition-colors">
+          {/* Kotak Pencarian Global Desktop */}
+          <div className="flex-1 max-w-xl">
+            <div className="relative">
+              <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Cari judul buku, nama penulis, atau nomor ISBN..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-line bg-surface text-sm text-ink placeholder:text-ink-muted/70 focus:border-ink focus:ring-1 focus:ring-ink transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Menu Navigasi Desktop */}
+          <nav className="flex items-center gap-6 text-sm font-medium shrink-0">
+            <Link
+              href="/"
+              className="text-ink hover:text-ink-muted transition-colors py-1 border-b-2 border-ink"
+            >
               Beranda
             </Link>
-            <Link href="/katalog/hiburan" className="hover:text-group-hiburan transition-colors">
-              Bacaan Hiburan
+            <Link
+              href="/katalog/hiburan"
+              className="text-ink-muted hover:text-group-hiburan transition-colors py-1 flex items-center gap-1.5"
+            >
+              <span className="w-2 h-2 rounded-full bg-group-hiburan" />
+              <span>Bacaan Hiburan</span>
             </Link>
-            <Link href="/katalog/pelajaran" className="hover:text-group-pelajaran transition-colors">
-              Buku Pelajaran
+            <Link
+              href="/katalog/pelajaran"
+              className="text-ink-muted hover:text-group-pelajaran transition-colors py-1 flex items-center gap-1.5"
+            >
+              <span className="w-2 h-2 rounded-full bg-group-pelajaran" />
+              <span>Buku Pelajaran</span>
             </Link>
+
+            <div className="h-5 w-px bg-line" />
+
+            {/* Tombol Kiosk & Portal Petugas */}
             <Link
               href="/kiosk"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md border border-line bg-surface hover:bg-paper-sunken transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink transition-colors text-xs font-semibold"
             >
-              <QrCode className="w-4 h-4 text-ink-muted" />
+              <QrCode className="w-4 h-4 text-status-tersedia" />
               <span>Kiosk Absensi</span>
             </Link>
+
             <Link
               href="/admin"
-              className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink"
+              className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink transition-colors font-medium"
             >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Portal Staf</span>
+              <Shield className="w-4 h-4" />
+              <span>Portal Admin</span>
             </Link>
           </nav>
         </div>
       </header>
 
-      {/* Konten Halaman */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8">{children}</main>
+      {/* Konten Utama Desktop */}
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-8 py-8">{children}</main>
 
-      {/* Footer Publik */}
-      <footer className="border-t border-line bg-paper-sunken/60 py-8 px-4 md:px-8 text-xs text-ink-muted mt-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4" />
-            <span className="font-medium text-ink">Bilik Baca</span> — Sistem Informasi Koleksi & Sirkulasi Perpustakaan Sekolah.
+      {/* Footer Desktop */}
+      <footer className="border-t border-line bg-paper-sunken/40 py-8 px-8 text-xs text-ink-muted mt-16">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-6">
+          <div className="flex items-center gap-2.5">
+            <BookOpen className="w-4 h-4 text-ink-muted" />
+            <span className="font-semibold text-ink">Bilik Baca</span>
+            <span>— Sistem Koleksi & Manajemen Perpustakaan Sekolah Berbasis Jaringan Komputer Lokal.</span>
           </div>
-          <p className="font-mono">Jam Layanan: Senin - Jumat, 07.30 - 15.00 WIB</p>
+
+          <div className="flex items-center gap-6 font-mono text-[11px]">
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-status-tersedia" />
+              Layanan: Senin - Jumat, 07.30 - 15.00 WIB
+            </span>
+            <span>Versi Desktop 1.0</span>
+          </div>
         </div>
       </footer>
-
-      {/* Bottom Bar Khusus Mobile (Maksimal 4 item) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-line px-2 py-2 flex items-center justify-around shadow-lg">
-        <Link
-          href="/"
-          className="flex flex-col items-center gap-1 py-1 px-3 text-[11px] font-medium text-ink"
-        >
-          <Compass className="w-5 h-5" />
-          <span>Beranda</span>
-        </Link>
-        <Link
-          href="/katalog/hiburan"
-          className="flex flex-col items-center gap-1 py-1 px-3 text-[11px] font-medium text-ink-muted hover:text-group-hiburan"
-        >
-          <BookOpen className="w-5 h-5" />
-          <span>Hiburan</span>
-        </Link>
-        <Link
-          href="/katalog/pelajaran"
-          className="flex flex-col items-center gap-1 py-1 px-3 text-[11px] font-medium text-ink-muted hover:text-group-pelajaran"
-        >
-          <Search className="w-5 h-5" />
-          <span>Pelajaran</span>
-        </Link>
-        <Link
-          href="/kiosk"
-          className="flex flex-col items-center gap-1 py-1 px-3 text-[11px] font-medium text-ink-muted"
-        >
-          <QrCode className="w-5 h-5" />
-          <span>Kiosk</span>
-        </Link>
-      </nav>
     </div>
   );
 }

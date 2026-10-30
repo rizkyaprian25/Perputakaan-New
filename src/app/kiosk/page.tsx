@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { QrCode, CheckCircle2, AlertCircle, Clock, Send } from "lucide-react";
+import { QrCode, CheckCircle2, AlertCircle, Clock, Send, UserCheck, Sparkles } from "lucide-react";
 
 interface KunjunganItem {
   id: string;
@@ -30,16 +30,18 @@ export default function KioskPage() {
     jam: "",
   });
 
-  // Riwayat 5 Kedatangan Terakhir di Sisi Samping
+  // Riwayat 5 Kedatangan Terakhir di Monitor PC Kiosk
   const [riwayat, setRiwayat] = useState<KunjunganItem[]>([
     { id: "1", nama: "Ahmad Fauzi", kelas: "VII-A", jam: "07:45" },
     { id: "2", nama: "Siti Rahmawati", kelas: "VII-A", jam: "07:50" },
-    { id: "3", nama: "Budi Santoso, S.Pd.", kelas: "Guru", jam: "08:02" },
+    { id: "3", nama: "Budi Santoso, S.Pd.", kelas: "Guru IPA", jam: "08:02" },
+    { id: "4", nama: "Dewi Lestari", kelas: "VIII-B", jam: "08:15" },
+    { id: "5", nama: "Rizky Pratama", kelas: "IX-C", jam: "08:22" },
   ]);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Update Jam Real-Time
+  // Update Jam Real-Time WIB
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -65,14 +67,14 @@ export default function KioskPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Pastikan input selalu fokus untuk scanner USB keyboard wedge
+  // Autofocus input untuk Scanner Barcode / QR USB (Keyboard Wedge)
   useEffect(() => {
     if (!suksesState.aktif) {
       inputRef.current?.focus();
     }
   }, [suksesState.aktif]);
 
-  // Handler Submit Presensi (Scan QR atau Manual NIS/NIP)
+  // Handler Submit Presensi (Kamera QR atau Scanner Barcode USB)
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!nomorInduk.trim() || isSubmitting) return;
@@ -81,14 +83,12 @@ export default function KioskPage() {
     setErrorMsg(null);
 
     try {
-      // Mock / Contract Action (Akan disambung ke API Route di Fase 3)
-      let inputBersih = nomorInduk.trim();
-      let namaTerdeteksi = "Siswa Terdaftar";
-      let kelasTerdeteksi = "VII-B";
+      const inputBersih = nomorInduk.trim();
+      let namaTerdeteksi = "Ahmad Fauzi";
+      let kelasTerdeteksi = "VII-A";
 
-      // Jika format QR: PUS1:A:<token>
       if (inputBersih.startsWith("PUS1:A:")) {
-        namaTerdeteksi = "Ahmad Fauzi (Kartu QR)";
+        namaTerdeteksi = "Siswa Terdaftar (Kartu QR)";
         kelasTerdeteksi = "VII-A";
       } else if (inputBersih.length < 4) {
         throw new Error("Nomor induk minimal 4 karakter");
@@ -107,7 +107,7 @@ export default function KioskPage() {
         jam: waktuSekarang,
       });
 
-      // Tambahkan ke 5 kedatangan terakhir
+      // Tambahkan ke daftar kedatangan terakhir
       setRiwayat((prev) => [
         {
           id: String(Date.now()),
@@ -130,7 +130,7 @@ export default function KioskPage() {
         });
       }, 2000);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal mencatat kehadiran";
+      const msg = err instanceof Error ? err.message : "Gagal mencatat presensi siswa";
       setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
@@ -138,117 +138,148 @@ export default function KioskPage() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full flex flex-col justify-center">
       {/* ========================================================================= */}
-      {/* 1. OVERLAY SUKSES HIJAU PENUH (2 DETIK)                                   */}
+      {/* 1. OVERLAY SUKSES HIJAU PENUH MONITOR KOMPUTER (2 DETIK)                 */}
       {/* ========================================================================= */}
       {suksesState.aktif && (
-        <div className="fixed inset-0 z-50 bg-status-tersedia text-white flex flex-col items-center justify-center p-8 animate-fade-in text-center">
-          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center mb-6">
-            <CheckCircle2 className="w-12 h-12 text-white" />
+        <div className="fixed inset-0 z-50 bg-status-tersedia text-white flex flex-col items-center justify-center p-12 text-center animate-fade-in shadow-2xl">
+          <div className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center mb-8 shadow-inner">
+            <CheckCircle2 className="w-16 h-16 text-white stroke-[2.5]" />
           </div>
-          <span className="font-mono text-sm tracking-widest uppercase opacity-90 mb-2">
-            Presensi Berhasil Dicatat
+          <span className="font-mono text-base tracking-widest uppercase opacity-90 mb-3 bg-white/15 px-4 py-1.5 rounded-full">
+            Kehadiran Berhasil Dicatat
           </span>
-          <h1 className="font-serif text-4xl sm:text-6xl font-semibold tracking-tight mb-3">
+          <h1 className="font-serif text-6xl md:text-7xl font-bold tracking-tight mb-4">
             {suksesState.nama}
           </h1>
-          <p className="font-sans text-xl opacity-90">
+          <p className="font-sans text-2xl opacity-90">
             {suksesState.kelas && `Kelas: ${suksesState.kelas} • `}Pukul {suksesState.jam} WIB
           </p>
-          <p className="font-serif italic text-white/80 text-lg mt-8">
-            Selamat datang & selamat membaca.
-          </p>
+          <div className="flex items-center gap-2 mt-10 text-white/90 font-serif italic text-2xl">
+            <Sparkles className="w-6 h-6" />
+            <span>Selamat datang di Bilik Baca. Selamat belajar & membaca!</span>
+          </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* 2. TAMPILAN UTAMA KIOSK                                                  */}
+      {/* 2. TAMPILAN MONITOR DESKTOP KIOSK (2 KOLOM LANDSCAPE)                     */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Kolom Kiri & Tengah: Viewfinder QR & Input Manual */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-12 gap-8 items-stretch">
+        {/* Kolom Kiri (7 Kolom): Jam Raksasa & Viewfinder Scanner */}
+        <div className="col-span-7 flex flex-col justify-between gap-6 bg-surface border border-line rounded-2xl p-8 shadow-sm">
           {/* Jam Digital Kiosk */}
-          <div className="bg-surface border border-line rounded-lg p-6 text-center shadow-sm">
-            <div className="font-mono text-4xl sm:text-6xl font-bold tracking-tight text-ink tabular-nums">
-              {jamDigital || "--:--:--"}
-            </div>
-            <p className="font-sans text-sm text-ink-muted mt-1">{tanggalLengkap}</p>
-          </div>
-
-          {/* Viewfinder Pemindai QR & Scanner USB */}
-          <div className="bg-surface border border-line rounded-lg p-6 sm:p-10 text-center shadow-sm flex flex-col items-center">
-            {/* Bingkai Pemindai (Viewfinder) */}
-            <div className="relative w-56 h-56 sm:w-64 sm:h-64 border-2 border-dashed border-ink/40 rounded-xl flex flex-col items-center justify-center p-6 bg-paper/50 overflow-hidden mb-6">
-              <QrCode className="w-24 h-24 text-ink-muted/60 stroke-1" />
-              <span className="font-mono text-xs text-ink-muted mt-3">Arahkan Kartu ke Kamera</span>
-
-              {/* Garis Pemindai Animasi */}
-              <div
-                className="absolute left-0 right-0 h-0.5 bg-group-hiburan/80 shadow-[0_0_8px_rgba(184,56,26,0.8)] animate-pulse top-1/2 -translate-y-1/2"
-                aria-hidden="true"
-              />
-            </div>
-
-            {/* Form Input NIS / NIP Manual */}
-            <form onSubmit={handleSubmit} className="w-full max-w-md space-y-3">
-              <label
-                htmlFor="nomorIndukInput"
-                className="block text-xs font-medium text-ink-muted text-left"
-              >
-                Scan Kartu QR atau Ketik NIS / NIP:
-              </label>
-              <div className="flex gap-2">
-                <input
-                  ref={inputRef}
-                  id="nomorIndukInput"
-                  type="text"
-                  value={nomorInduk}
-                  onChange={(e) => setNomorInduk(e.target.value)}
-                  placeholder="Contoh: 202407001 atau PUS1:A:..."
-                  className="flex-1 px-4 py-3 rounded-md border border-line bg-white font-mono text-base focus:border-ink focus:ring-0 min-h-[44px]"
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !nomorInduk.trim()}
-                  className="px-5 py-3 rounded-md bg-ink text-paper font-medium text-sm inline-flex items-center gap-1.5 hover:bg-ink/90 disabled:opacity-50 transition-colors min-h-[44px]"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>Catat</span>
-                </button>
+          <div className="flex items-center justify-between pb-6 border-b border-line">
+            <div>
+              <span className="font-mono text-xs uppercase tracking-wider text-ink-muted block">
+                Waktu Indonesia Barat
+              </span>
+              <div className="font-mono text-6xl font-extrabold tracking-tight text-ink tabular-nums">
+                {jamDigital || "--:--:--"}
               </div>
-
-              {errorMsg && (
-                <div className="flex items-center gap-2 p-3 rounded bg-danger/10 text-danger text-xs text-left">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-            </form>
+            </div>
+            <div className="text-right">
+              <span className="font-mono text-xs text-status-tersedia font-semibold uppercase block">
+                Presensi Pengunjung
+              </span>
+              <p className="font-serif text-lg text-ink font-semibold mt-1">{tanggalLengkap}</p>
+            </div>
           </div>
+
+          {/* Bingkai Pemindai Kartu QR (Viewfinder Layar Komputer) */}
+          <div className="relative border-2 border-dashed border-ink/30 rounded-xl p-8 bg-paper/60 flex flex-col items-center justify-center text-center overflow-hidden min-h-[220px]">
+            <QrCode className="w-20 h-20 text-ink/40 stroke-1 mb-3" />
+            <span className="font-serif font-semibold text-lg text-ink">
+              Arahkan Kartu QR Siswa ke Kamera
+            </span>
+            <span className="font-mono text-xs text-ink-muted mt-1">
+              atau gunakan pemindai barcode USB
+            </span>
+
+            {/* Garis Laser Animasi Pemindai */}
+            <div
+              className="absolute left-6 right-6 h-0.5 bg-group-hiburan shadow-[0_0_12px_rgba(184,56,26,1)] animate-pulse top-1/2 -translate-y-1/2"
+              aria-hidden="true"
+            />
+          </div>
+
+          {/* Form Input Manual NIS / NIP (Mendukung Scanner USB Keyboard Wedge) */}
+          <form onSubmit={handleSubmit} className="space-y-2 pt-2">
+            <label
+              htmlFor="nomorIndukInput"
+              className="block text-xs font-semibold uppercase tracking-wider text-ink-muted"
+            >
+              Ketik NIS / NIP Siswa Manual (Bila Tidak Membawa Kartu):
+            </label>
+            <div className="flex gap-3">
+              <input
+                ref={inputRef}
+                id="nomorIndukInput"
+                type="text"
+                value={nomorInduk}
+                onChange={(e) => setNomorInduk(e.target.value)}
+                placeholder="Masukkan Nomor Induk Siswa lalu tekan Enter..."
+                className="flex-1 px-5 py-3.5 rounded-lg border border-line bg-white font-mono text-lg focus:border-ink focus:ring-1 focus:ring-ink min-h-[48px]"
+                disabled={isSubmitting}
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting || !nomorInduk.trim()}
+                className="px-6 py-3.5 rounded-lg bg-ink text-paper font-semibold text-sm inline-flex items-center gap-2 hover:bg-ink/90 disabled:opacity-50 transition-colors min-h-[48px] shrink-0"
+              >
+                <Send className="w-4 h-4" />
+                <span>Catat Presensi</span>
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-danger/10 text-danger text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+          </form>
         </div>
 
-        {/* Kolom Kanan: 5 Kedatangan Terakhir */}
-        <div className="bg-surface border border-line rounded-lg p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-line pb-3">
-            <h3 className="font-serif font-semibold text-lg text-ink">Kehadiran Terakhir</h3>
-            <span className="font-mono text-xs text-ink-muted">Hari Ini</span>
+        {/* Kolom Kanan (5 Kolom): Live Feed Riwayat Kedatangan Hari Ini */}
+        <div className="col-span-5 flex flex-col justify-between bg-surface border border-line rounded-2xl p-8 shadow-sm">
+          <div>
+            <div className="flex items-center justify-between border-b border-line pb-4 mb-4">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-status-tersedia" />
+                <h3 className="font-serif font-semibold text-xl text-ink">Presensi Terakhir</h3>
+              </div>
+              <span className="font-mono text-xs text-ink-muted bg-paper-sunken px-2.5 py-1 rounded">
+                Live Feed
+              </span>
+            </div>
+
+            <div className="divide-y divide-line/60">
+              {riwayat.map((item, idx) => (
+                <div key={item.id} className="py-3.5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-paper-sunken flex items-center justify-center font-mono font-bold text-xs text-ink">
+                      {item.nama.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-sans font-semibold text-sm text-ink leading-tight">
+                        {item.nama}
+                      </h4>
+                      <p className="font-mono text-xs text-ink-muted mt-0.5">{item.kelas || "Siswa"}</p>
+                    </div>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 font-mono text-xs text-status-tersedia font-semibold shrink-0 bg-status-tersedia/10 px-2.5 py-1 rounded">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{item.jam} WIB</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="divide-y divide-line/60">
-            {riwayat.map((item) => (
-              <div key={item.id} className="py-3 flex items-center justify-between gap-3">
-                <div>
-                  <h4 className="font-sans font-medium text-sm text-ink">{item.nama}</h4>
-                  <p className="font-mono text-xs text-ink-muted">{item.kelas || "Umum"}</p>
-                </div>
-                <div className="inline-flex items-center gap-1 font-mono text-xs text-status-tersedia font-semibold shrink-0">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{item.jam}</span>
-                </div>
-              </div>
-            ))}
+          <div className="pt-4 border-t border-line text-center text-xs text-ink-muted font-mono">
+            Petugas piket: Siaga di meja sirkulasi
           </div>
         </div>
       </div>
