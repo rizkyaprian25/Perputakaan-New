@@ -31,15 +31,26 @@ export default function KioskPage() {
   });
 
   // Riwayat 5 Kedatangan Terakhir di Monitor PC Kiosk
-  const [riwayat, setRiwayat] = useState<KunjunganItem[]>([
-    { id: "1", nama: "Ahmad Fauzi", kelas: "VII-A", jam: "07:45" },
-    { id: "2", nama: "Siti Rahmawati", kelas: "VII-A", jam: "07:50" },
-    { id: "3", nama: "Budi Santoso, S.Pd.", kelas: "Guru IPA", jam: "08:02" },
-    { id: "4", nama: "Dewi Lestari", kelas: "VIII-B", jam: "08:15" },
-    { id: "5", nama: "Rizky Pratama", kelas: "IX-C", jam: "08:22" },
-  ]);
+  const [riwayat, setRiwayat] = useState<KunjunganItem[]>([]);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Ambil data live feed kunjungan hari ini dari server
+  const muatFeedTerakhir = async () => {
+    try {
+      const res = await fetch("/api/v1/absensi/terakhir");
+      const json = await res.json();
+      if (json.sukses && Array.isArray(json.data)) {
+        setRiwayat(json.data);
+      }
+    } catch (e) {
+      console.error("Gagal memuat feed kehadiran:", e);
+    }
+  };
+
+  useEffect(() => {
+    muatFeedTerakhir();
+  }, []);
 
   // Update Jam Real-Time WIB
   useEffect(() => {
@@ -83,41 +94,30 @@ export default function KioskPage() {
     setErrorMsg(null);
 
     try {
-      const inputBersih = nomorInduk.trim();
-      let namaTerdeteksi = "Ahmad Fauzi";
-      let kelasTerdeteksi = "VII-A";
+      const res = await fetch("/api/v1/absensi/catat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: nomorInduk.trim() }),
+      });
 
-      if (inputBersih.startsWith("PUS1:A:")) {
-        namaTerdeteksi = "Siswa Terdaftar (Kartu QR)";
-        kelasTerdeteksi = "VII-A";
-      } else if (inputBersih.length < 4) {
-        throw new Error("Nomor induk minimal 4 karakter");
+      const json = await res.json();
+
+      if (!res.ok || !json.sukses) {
+        throw new Error(json.pesan || "Kartu tidak dikenali atau belum terdaftar");
       }
 
-      const waktuSekarang = new Date().toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+      const hasil = json.data;
 
       // Tampilkan Layar Sukses Penuh selama 2 detik
       setSuksesState({
         aktif: true,
-        nama: namaTerdeteksi,
-        kelas: kelasTerdeteksi,
-        jam: waktuSekarang,
+        nama: hasil.nama,
+        kelas: hasil.kelas,
+        jam: hasil.jam,
       });
 
-      // Tambahkan ke daftar kedatangan terakhir
-      setRiwayat((prev) => [
-        {
-          id: String(Date.now()),
-          nama: namaTerdeteksi,
-          kelas: kelasTerdeteksi,
-          jam: waktuSekarang,
-        },
-        ...prev.slice(0, 4),
-      ]);
-
+      // Muat ulang live feed kehadiran
+      await muatFeedTerakhir();
       setNomorInduk("");
 
       // Kembalikan ke mode normal setelah 2 detik (2000 ms)

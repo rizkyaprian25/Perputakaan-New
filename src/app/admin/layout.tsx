@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -103,8 +105,11 @@ export default function AdminLayout({
           </div>
 
           <button
-            onClick={() => {
-              window.location.href = "/";
+            onClick={async () => {
+              try {
+                await fetch("/api/v1/auth/logout", { method: "POST" });
+              } catch {}
+              window.location.href = "/admin/login";
             }}
             className="flex items-center gap-2 w-full px-3.5 py-2.5 text-xs font-semibold text-danger hover:bg-danger/10 rounded-md transition-colors min-h-[44px]"
           >
