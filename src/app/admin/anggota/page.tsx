@@ -1,11 +1,39 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { UserPlus, FileSpreadsheet, QrCode, Search, X, CheckCircle2, AlertCircle, Upload, ArrowRight, RefreshCw, CloudDownload } from "lucide-react";
+/**
+ * Bilik Baca - Halaman Manajemen Anggota Perpustakaan
+ * Mendukung Pencarian Real-time, Filter Status, Paginasi (25 baris/halaman),
+ * Tambah Manual, Edit Anggota, Impor XLSX Dua Langkah, Cetak Kartu QR, dan Sinkronisasi Netri SMS.
+ */
+
+import { useState, useEffect, useMemo } from "react";
+import {
+  UserPlus,
+  FileSpreadsheet,
+  QrCode,
+  Search,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Upload,
+  ArrowRight,
+  CloudDownload,
+  Edit3,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
+const BARIS_PER_HALAMAN = 25;
 
 export default function AdminAnggotaPage() {
   const [daftarAnggota, setDaftarAnggota] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter & Paginasi
+  const [kataKunci, setKataKunci] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"semua" | "aktif" | "nonaktif">("semua");
+  const [filterJenis, setFilterJenis] = useState<"semua" | "siswa" | "guru" | "staf">("semua");
+  const [halaman, setHalaman] = useState(1);
 
   // Modal Tambah Anggota Manual
   const [modalTambahBuka, setModalTambahBuka] = useState(false);
@@ -14,6 +42,16 @@ export default function AdminAnggotaPage() {
   const [formJenis, setFormJenis] = useState<"siswa" | "guru" | "staf">("siswa");
   const [formKelas, setFormKelas] = useState("");
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+
+  // Modal Edit Anggota
+  const [modalEditBuka, setModalEditBuka] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [editNis, setEditNis] = useState("");
+  const [editNama, setEditNama] = useState("");
+  const [editJenis, setEditJenis] = useState<"siswa" | "guru" | "staf">("siswa");
+  const [editKelas, setEditKelas] = useState("");
+  const [editStatus, setEditStatus] = useState<"aktif" | "nonaktif" | "ditangguhkan">("aktif");
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
   // Modal Impor Excel/CSV
   const [modalImporBuka, setModalImporBuka] = useState(false);
@@ -58,6 +96,33 @@ export default function AdminAnggotaPage() {
     muatData();
   }, []);
 
+  // Reset ke halaman 1 setiap kali filter berubah
+  useEffect(() => {
+    setHalaman(1);
+  }, [kataKunci, filterStatus, filterJenis]);
+
+  // Data anggota yang sudah difilter
+  const anggotaTerfilter = useMemo(() => {
+    return daftarAnggota.filter((m) => {
+      if (filterStatus !== "semua" && m.status !== filterStatus) return false;
+      if (filterJenis !== "semua" && m.jenis !== filterJenis) return false;
+      if (kataKunci.trim()) {
+        const q = kataKunci.toLowerCase();
+        const cocokNama = m.nama?.toLowerCase().includes(q);
+        const cocokNis = m.nomorInduk?.toLowerCase().includes(q);
+        const cocokKelas = (m.kelas || "").toLowerCase().includes(q);
+        return cocokNama || cocokNis || cocokKelas;
+      }
+      return true;
+    });
+  }, [daftarAnggota, kataKunci, filterStatus, filterJenis]);
+
+  const totalHalaman = Math.max(1, Math.ceil(anggotaTerfilter.length / BARIS_PER_HALAMAN));
+  const anggotaHalamanIni = useMemo(() => {
+    const mulai = (halaman - 1) * BARIS_PER_HALAMAN;
+    return anggotaTerfilter.slice(mulai, mulai + BARIS_PER_HALAMAN);
+  }, [anggotaTerfilter, halaman]);
+
   // Simpan Anggota Baru Manual
   const handleSimpanManual = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +157,51 @@ export default function AdminAnggotaPage() {
       tampilkanToast(err.message, "error");
     } finally {
       setIsSubmittingManual(false);
+    }
+  };
+
+  // Buka Modal Edit Anggota
+  const bukaModalEdit = (m: any) => {
+    setEditId(m.id);
+    setEditNis(m.nomorInduk || "");
+    setEditNama(m.nama || "");
+    setEditJenis(m.jenis || "siswa");
+    setEditKelas(m.kelas || "");
+    setEditStatus(m.status || "aktif");
+    setModalEditBuka(true);
+  };
+
+  // Simpan Edit Anggota
+  const handleSimpanEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editId || !editNis.trim() || !editNama.trim() || isSubmittingEdit) return;
+
+    setIsSubmittingEdit(true);
+    try {
+      const res = await fetch(`/api/v1/admin/anggota/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nomorInduk: editNis.trim(),
+          nama: editNama.trim(),
+          jenis: editJenis,
+          kelas: editKelas.trim() || null,
+          status: editStatus,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.sukses) {
+        throw new Error(json.pesan || "Gagal memperbarui anggota");
+      }
+
+      tampilkanToast(json.pesan, "sukses");
+      setModalEditBuka(false);
+      muatData();
+    } catch (err: any) {
+      tampilkanToast(err.message, "error");
+    } finally {
+      setIsSubmittingEdit(false);
     }
   };
 
@@ -189,7 +299,7 @@ export default function AdminAnggotaPage() {
       {/* Toast Alert */}
       {toast && (
         <div
-          className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-lg shadow-lg border flex items-center gap-3 text-sm font-medium animate-fade-in ${
+          className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-lg shadow-lg border flex items-center gap-3 text-sm font-medium animate-fade-in print:hidden ${
             toast.tipe === "sukses"
               ? "bg-status-tersedia text-white border-status-tersedia/20"
               : "bg-danger text-white border-danger/20"
@@ -205,15 +315,15 @@ export default function AdminAnggotaPage() {
       )}
 
       {/* Header Halaman Anggota */}
-      <div className="flex items-center justify-between border-b border-line pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 print:hidden">
         <div>
           <h1 className="font-serif text-3xl font-semibold text-ink">Data Anggota Siswa & Guru</h1>
           <p className="text-xs text-ink-muted mt-0.5">
-            Kelola master data peminjam perpustakaan, cetak kartu QR anggota, dan impor massal Excel.
+            Kelola master data peminjam perpustakaan, cetak kartu QR anggota, dan sinkronisasi Netri SMS.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleSyncNetri}
             disabled={isSyncingNetri}
@@ -248,63 +358,152 @@ export default function AdminAnggotaPage() {
         </div>
       </div>
 
-      {/* Tabel Anggota */}
-      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-line flex items-center justify-between">
-          <h2 className="font-serif font-bold text-base text-ink">Daftar Anggota Terdaftar</h2>
-          <span className="font-mono text-xs text-ink-muted">{daftarAnggota.length} Anggota</span>
+      {/* Tabel Anggota + Pencarian & Filter */}
+      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden">
+        <div className="px-6 py-4 border-b border-line flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h2 className="font-serif font-bold text-base text-ink">Daftar Anggota Terdaftar</h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-paper-sunken font-mono text-xs text-ink-muted">
+              {anggotaTerfilter.length} dari {daftarAnggota.length} Anggota
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Input Pencarian */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={kataKunci}
+                onChange={(e) => setKataKunci(e.target.value)}
+                placeholder="Cari NIS, Nama, atau Kelas..."
+                className="pl-8 pr-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[38px] w-64"
+              />
+            </div>
+
+            {/* Filter Jenis */}
+            <select
+              value={filterJenis}
+              onChange={(e: any) => setFilterJenis(e.target.value)}
+              className="px-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[38px]"
+            >
+              <option value="semua">Semua Jenis</option>
+              <option value="siswa">Siswa</option>
+              <option value="guru">Guru</option>
+              <option value="staf">Staf</option>
+            </select>
+
+            {/* Filter Status */}
+            <select
+              value={filterStatus}
+              onChange={(e: any) => setFilterStatus(e.target.value)}
+              className="px-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[38px]"
+            >
+              <option value="semua">Semua Status</option>
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Nonaktif / Lulus</option>
+            </select>
+          </div>
         </div>
 
         {loading ? (
           <div className="p-8 text-center text-xs text-ink-muted font-mono">
             Memuat data anggota perpustakaan...
           </div>
-        ) : daftarAnggota.length === 0 ? (
+        ) : anggotaTerfilter.length === 0 ? (
           <div className="p-8 text-center text-ink-muted text-sm">
-            Belum ada anggota terdaftar. Klik Tambah Anggota atau Impor Excel.
+            Tidak ada anggota yang sesuai dengan pencarian/filter.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-paper-sunken/60 font-mono uppercase text-ink-muted border-b border-line">
-                <tr>
-                  <th className="py-3 px-4">Nomor Induk</th>
-                  <th className="py-3 px-4">Nama Lengkap</th>
-                  <th className="py-3 px-4">Jenis</th>
-                  <th className="py-3 px-4">Kelas</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-center">Kartu QR</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line/60">
-                {daftarAnggota.map((m) => (
-                  <tr key={m.id} className="hover:bg-paper-sunken/20 transition-colors">
-                    <td className="py-3 px-4 font-mono font-bold text-ink">{m.nomorInduk}</td>
-                    <td className="py-3 px-4 font-medium text-ink">{m.nama}</td>
-                    <td className="py-3 px-4 capitalize font-mono text-ink-muted">{m.jenis}</td>
-                    <td className="py-3 px-4 font-mono">{m.kelas || "Umum"}</td>
-                    <td className="py-3 px-4">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-status-tersedia/10 text-status-tersedia font-bold">
-                        {m.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => {
-                          setSelectedAnggota(m);
-                          setModalCetakBuka(true);
-                        }}
-                        className="px-3 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-mono font-semibold inline-flex items-center gap-1.5"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        <span>Cetak Kartu</span>
-                      </button>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-paper-sunken/60 font-mono uppercase text-ink-muted border-b border-line">
+                  <tr>
+                    <th className="py-3 px-4">Nomor Induk</th>
+                    <th className="py-3 px-4">Nama Lengkap</th>
+                    <th className="py-3 px-4">Jenis</th>
+                    <th className="py-3 px-4">Kelas</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Aksi & Kartu</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-line/60">
+                  {anggotaHalamanIni.map((m) => (
+                    <tr key={m.id} className="hover:bg-paper-sunken/20 transition-colors">
+                      <td className="py-3 px-4 font-mono font-bold text-ink">{m.nomorInduk}</td>
+                      <td className="py-3 px-4 font-medium text-ink">{m.nama}</td>
+                      <td className="py-3 px-4 capitalize font-mono text-ink-muted">{m.jenis}</td>
+                      <td className="py-3 px-4 font-mono">{m.kelas || "Umum"}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold ${
+                            m.status === "aktif"
+                              ? "bg-status-tersedia/10 text-status-tersedia"
+                              : "bg-danger/10 text-danger"
+                          }`}
+                        >
+                          {m.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            onClick={() => bukaModalEdit(m)}
+                            className="px-2.5 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-medium inline-flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedAnggota(m);
+                              setModalCetakBuka(true);
+                            }}
+                            className="px-3 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-mono font-semibold inline-flex items-center gap-1.5"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                            <span>Kartu QR</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Kontrol Paginasi */}
+            <div className="px-6 py-3.5 border-t border-line flex items-center justify-between text-xs bg-paper-sunken/20">
+              <span className="font-mono text-ink-muted">
+                Menampilkan {(halaman - 1) * BARIS_PER_HALAMAN + 1}–
+                {Math.min(halaman * BARIS_PER_HALAMAN, anggotaTerfilter.length)} dari{" "}
+                {anggotaTerfilter.length} anggota
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setHalaman((p) => Math.max(1, p - 1))}
+                  disabled={halaman <= 1}
+                  className="px-3 py-1.5 rounded border border-line bg-white hover:bg-paper-sunken disabled:opacity-40 inline-flex items-center gap-1 font-medium"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Sebelumnya</span>
+                </button>
+                <span className="font-mono px-2">
+                  Hal {halaman} / {totalHalaman}
+                </span>
+                <button
+                  onClick={() => setHalaman((p) => Math.min(totalHalaman, p + 1))}
+                  disabled={halaman >= totalHalaman}
+                  className="px-3 py-1.5 rounded border border-line bg-white hover:bg-paper-sunken disabled:opacity-40 inline-flex items-center gap-1 font-medium"
+                >
+                  <span>Berikutnya</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -389,6 +588,107 @@ export default function AdminAnggotaPage() {
                   className="px-5 py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 disabled:opacity-50"
                 >
                   {isSubmittingManual ? "Menyimpan..." : "Simpan Anggota"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1B: FORM EDIT ANGGOTA                                              */}
+      {/* ========================================================================= */}
+      {modalEditBuka && (
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <h3 className="font-serif font-bold text-lg text-ink">Edit Data Anggota</h3>
+              <button
+                onClick={() => setModalEditBuka(false)}
+                className="p-1 rounded text-ink-muted hover:text-ink"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSimpanEdit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-ink-muted mb-1">
+                  Nomor Induk (NIS / NIP) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editNis}
+                  onChange={(e) => setEditNis(e.target.value)}
+                  className="w-full px-3 py-2 rounded border border-line font-mono text-sm focus:border-ink"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-ink-muted mb-1">Nama Lengkap *</label>
+                <input
+                  type="text"
+                  required
+                  value={editNama}
+                  onChange={(e) => setEditNama(e.target.value)}
+                  className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Jenis Anggota</label>
+                  <select
+                    value={editJenis}
+                    onChange={(e: any) => setEditJenis(e.target.value)}
+                    className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink"
+                  >
+                    <option value="siswa">Siswa</option>
+                    <option value="guru">Guru</option>
+                    <option value="staf">Staf</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">Status Keanggotaan</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e: any) => setEditStatus(e.target.value)}
+                    className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink"
+                  >
+                    <option value="aktif">Aktif</option>
+                    <option value="nonaktif">Nonaktif / Lulus</option>
+                    <option value="ditangguhkan">Ditangguhkan</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-ink-muted mb-1">Kelas / Ruang</label>
+                <input
+                  type="text"
+                  value={editKelas}
+                  onChange={(e) => setEditKelas(e.target.value)}
+                  placeholder="Contoh: VIII-A"
+                  className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink font-mono"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-line flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalEditBuka(false)}
+                  className="px-4 py-2 text-xs font-medium text-ink-muted hover:text-ink"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEdit}
+                  className="px-5 py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 disabled:opacity-50"
+                >
+                  {isSubmittingEdit ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
               </div>
             </form>
@@ -510,7 +810,7 @@ export default function AdminAnggotaPage() {
       {modalCetakBuka && selectedAnggota && (
         <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
           <div className="bg-surface border border-line rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
-            <div className="flex items-center justify-between border-b border-line pb-3">
+            <div className="flex items-center justify-between border-b border-line pb-3 print:hidden">
               <h3 className="font-serif font-bold text-base text-ink">Kartu Anggota Perpustakaan</h3>
               <button
                 onClick={() => setModalCetakBuka(false)}
@@ -548,7 +848,7 @@ export default function AdminAnggotaPage() {
 
             <button
               onClick={() => window.print()}
-              className="w-full py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90"
+              className="w-full py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 print:hidden"
             >
               Cetak Kartu Sekarang
             </button>

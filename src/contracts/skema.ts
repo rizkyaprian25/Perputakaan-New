@@ -28,15 +28,21 @@ export const UlidSkema = z
   .string()
   .length(26, "ID harus berupa ULID valid sepanjang 26 karakter");
 
+// Normalisasi ISBN otomatis (menghapus strip dan spasi sebelum validasi ISBN-10 / ISBN-13)
+export const IsbnSkema = z
+  .string()
+  .trim()
+  .transform((val) => val.replace(/[- ]+/g, ""))
+  .refine(
+    (val) => val === "" || /^(97[89])?\d{9}[\dXx]$/.test(val),
+    "Format ISBN tidak valid (harus 10 atau 13 digit angka ISBN)"
+  )
+  .optional();
+
 // Skema Buku Baru (Input Form Tambah Buku)
 export const BukuBaruSkema = z
   .object({
-    isbn: z
-      .string()
-      .trim()
-      .regex(/^(97[89])?\d{9}[\dXx]$/, "Format ISBN tidak valid (harus ISBN-10 atau ISBN-13)")
-      .optional()
-      .or(z.literal("")),
+    isbn: IsbnSkema,
     judul: z
       .string({ required_error: "Judul buku wajib diisi" })
       .trim()
@@ -47,28 +53,72 @@ export const BukuBaruSkema = z
       .trim()
       .min(1, "Nama penulis tidak boleh kosong")
       .max(300, "Nama penulis maksimal 300 karakter"),
-    penerbit: z.string().trim().max(200, "Penerbit maksimal 200 karakter").optional(),
+    penerbit: z.string().trim().max(200, "Penerbit maksimal 200 karakter").optional().or(z.literal("")),
     tahunTerbit: z
       .number({ invalid_type_error: "Tahun terbit harus berupa angka" })
       .int()
       .min(1800, "Tahun terbit minimal 1800")
       .max(2100, "Tahun terbit maksimal 2100")
-      .optional(),
-    jumlahHalaman: z.number().int().min(1).max(10000).optional(),
+      .optional()
+      .nullable(),
+    jumlahHalaman: z.number().int().min(1).max(10000).optional().nullable(),
     kategoriId: UlidSkema,
     sinopsis: z
       .string()
       .trim()
       .max(BATAS.SINOPSIS_MAKS_KARAKTER, "Sinopsis melebihi batas 5.000 karakter")
-      .optional(),
+      .optional()
+      .or(z.literal("")),
+    sampulUrl: z.string().trim().max(255, "URL sampul maksimal 255 karakter").optional().or(z.literal("")),
     jumlahEksemplar: z
       .number({ required_error: "Jumlah eksemplar wajib diisi" })
       .int("Jumlah eksemplar harus bilangan bulat")
       .min(1, "Minimal harus ada 1 eksemplar")
       .max(BATAS.EKSEMPLAR_MAKS_PER_PENAMBAHAN, `Maksimal ${BATAS.EKSEMPLAR_MAKS_PER_PENAMBAHAN} eksemplar sekaligus`),
-    lokasiRak: z.string().trim().max(50, "Lokasi rak maksimal 50 karakter").optional(),
+    lokasiRak: z.string().trim().max(50, "Lokasi rak maksimal 50 karakter").optional().or(z.literal("")),
     sumber: z.enum(SUMBER_BUKU).default("manual"),
-    idSumberEksternal: z.string().trim().max(100).optional(),
+    idSumberEksternal: z.string().trim().max(100).optional().or(z.literal("")),
+  })
+  .strict();
+
+// Skema Pembaruan Buku (Edit Buku)
+export const BukuUpdateSkema = z
+  .object({
+    isbn: IsbnSkema,
+    judul: z
+      .string({ required_error: "Judul buku wajib diisi" })
+      .trim()
+      .min(1, "Judul buku tidak boleh kosong")
+      .max(300, "Judul buku maksimal 300 karakter"),
+    penulis: z
+      .string({ required_error: "Nama penulis wajib diisi" })
+      .trim()
+      .min(1, "Nama penulis tidak boleh kosong")
+      .max(300, "Nama penulis maksimal 300 karakter"),
+    penerbit: z.string().trim().max(200).optional().or(z.literal("")),
+    tahunTerbit: z.number().int().min(1800).max(2100).optional().nullable(),
+    jumlahHalaman: z.number().int().min(1).max(10000).optional().nullable(),
+    kategoriId: UlidSkema,
+    sinopsis: z.string().trim().max(BATAS.SINOPSIS_MAKS_KARAKTER).optional().or(z.literal("")),
+    sampulUrl: z.string().trim().max(255).optional().or(z.literal("")),
+    lokasiRak: z.string().trim().max(50).optional().or(z.literal("")),
+  })
+  .strict();
+
+// Skema Tambah Eksemplar Baru untuk Buku yang Sudah Ada
+export const EksemplarTambahSkema = z
+  .object({
+    aksi: z.literal("tambah_eksemplar"),
+    jumlah: z.number().int().min(1, "Minimal 1 eksemplar").max(100, "Maksimal 100 eksemplar per penambahan"),
+  })
+  .strict();
+
+// Skema Ubah Status Kondisi Eksemplar
+export const EksemplarUbahStatusSkema = z
+  .object({
+    aksi: z.literal("ubah_status"),
+    eksemplarId: UlidSkema,
+    status: z.enum(["tersedia", "rusak", "hilang"]),
   })
   .strict();
 
@@ -82,7 +132,18 @@ export const AnggotaBaruSkema = z
       .min(2, "Nama minimal 2 karakter")
       .max(150, "Nama maksimal 150 karakter"),
     jenis: z.enum(JENIS_ANGGOTA, { required_error: "Jenis anggota wajib dipilih" }),
-    kelas: z.string().trim().max(50, "Kelas maksimal 50 karakter").optional(),
+    kelas: z.string().trim().max(50, "Kelas maksimal 50 karakter").optional().or(z.literal("")),
+  })
+  .strict();
+
+// Skema Edit Anggota
+export const AnggotaUpdateSkema = z
+  .object({
+    nomorInduk: NomorIndukSkema,
+    nama: z.string().trim().min(2, "Nama minimal 2 karakter").max(150),
+    jenis: z.enum(JENIS_ANGGOTA),
+    kelas: z.string().trim().max(50).optional().or(z.literal("")),
+    status: z.enum(STATUS_ANGGOTA),
   })
   .strict();
 
@@ -124,6 +185,13 @@ export const KembaliBukuSkema = z
   })
   .strict();
 
+// Skema Perpanjangan Peminjaman Buku
+export const PerpanjangPinjamSkema = z
+  .object({
+    peminjamanId: UlidSkema,
+  })
+  .strict();
+
 // Skema Kategori Buku
 export const KategoriSkema = z
   .object({
@@ -133,6 +201,16 @@ export const KategoriSkema = z
       .trim()
       .min(2, "Nama kategori minimal 2 karakter")
       .max(100, "Nama kategori maksimal 100 karakter"),
+  })
+  .strict();
+
+// Skema Pembaruan Pengaturan Sistem
+export const PengaturanUpdateSkema = z
+  .object({
+    lamaPinjamHari: z.number().int().min(1).max(60),
+    maksBukuPerAnggota: z.number().int().min(1).max(20),
+    dendaPerHariRp: z.number().int().min(0).max(100000),
+    namaPerpustakaan: z.string().trim().min(2).max(150).optional(),
   })
   .strict();
 

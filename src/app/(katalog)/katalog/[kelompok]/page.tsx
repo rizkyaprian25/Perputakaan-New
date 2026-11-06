@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { buku, kategori, eksemplar } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { BookCover } from "@/components/ui/BookCover";
-import { BookSpineTick } from "@/components/ui/BookSpineTick";
+import { BookCatalogGrid, ItemKatalogPublik } from "@/components/ui/BookCatalogGrid";
 import { ArrowLeft, BookOpen } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -60,11 +59,18 @@ export default async function KatalogKelompokPage({
     );
   }
 
-  const daftarBuku = await db
+  const rawBooks = await db
     .select({
       id: buku.id,
       judul: buku.judul,
       penulis: buku.penulis,
+      penerbit: buku.penerbit,
+      tahunTerbit: buku.tahunTerbit,
+      jumlahHalaman: buku.jumlahHalaman,
+      isbn: buku.isbn,
+      sinopsis: buku.sinopsis,
+      sampulBerkas: buku.sampulBerkas,
+      lokasiRak: buku.lokasiRak,
       kategoriNama: kategori.nama,
       totalEksemplar: sql<number>`count(${eksemplar.id})`,
       tersediaEksemplar: sql<number>`sum(case when ${eksemplar.status} = 'tersedia' then 1 else 0 end)`,
@@ -73,7 +79,36 @@ export default async function KatalogKelompokPage({
     .innerJoin(kategori, eq(buku.kategoriId, kategori.id))
     .leftJoin(eksemplar, eq(buku.id, eksemplar.bukuId))
     .where(and(...conditions))
-    .groupBy(buku.id, kategori.nama);
+    .groupBy(
+      buku.id,
+      buku.judul,
+      buku.penulis,
+      buku.penerbit,
+      buku.tahunTerbit,
+      buku.jumlahHalaman,
+      buku.isbn,
+      buku.sinopsis,
+      buku.sampulBerkas,
+      buku.lokasiRak,
+      kategori.nama
+    );
+
+  const daftarBuku: ItemKatalogPublik[] = rawBooks.map((b) => ({
+    id: b.id,
+    judul: b.judul,
+    penulis: b.penulis,
+    penerbit: b.penerbit,
+    tahunTerbit: b.tahunTerbit,
+    jumlahHalaman: b.jumlahHalaman,
+    isbn: b.isbn,
+    sinopsis: b.sinopsis,
+    sampulUrl: b.sampulBerkas,
+    lokasiRak: b.lokasiRak,
+    kelompok: kelompok as "hiburan" | "pelajaran",
+    kategoriNama: b.kategoriNama,
+    totalEksemplar: Number(b.totalEksemplar || 0),
+    tersediaEksemplar: Number(b.tersediaEksemplar || 0),
+  }));
 
   return (
     <div className="space-y-8">
@@ -155,33 +190,7 @@ export default async function KatalogKelompokPage({
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {daftarBuku.map((item) => (
-            <div key={item.id} className="flex flex-col gap-2 group">
-              <BookCover
-                judul={item.judul}
-                penulis={item.penulis}
-                kelompok={kelompok}
-                className="group-hover:shadow-md transition-shadow"
-              />
-              <div className="flex flex-col gap-1 mt-1">
-                <span className="font-mono text-[10px] text-ink-muted uppercase">
-                  {item.kategoriNama}
-                </span>
-                <h3 className="font-serif font-semibold text-sm leading-tight text-ink line-clamp-2">
-                  {item.judul}
-                </h3>
-                <p className="text-xs text-ink-muted line-clamp-1">{item.penulis}</p>
-
-                <BookSpineTick
-                  total={Number(item.totalEksemplar || 0)}
-                  tersedia={Number(item.tersediaEksemplar || 0)}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <BookCatalogGrid items={daftarBuku} />
       )}
     </div>
   );

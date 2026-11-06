@@ -5,7 +5,6 @@
  * dengan judul bertipografi Fraunces serif putih (on-group) dan nama penulis di bawah.
  */
 
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { KelompokKategori } from "@/contracts/konstanta";
 
@@ -24,7 +23,6 @@ export function BookCover({
   kelompok = "hiburan",
   sampulUrl,
   className,
-  priority = false,
 }: BookCoverProps) {
   const isPelajaran = kelompok === "pelajaran";
 
@@ -36,36 +34,33 @@ export function BookCover({
         className
       )}
     >
-      {sampulUrl ? (
-        <Image
+      {/* Lapisan Dasar: Sampul Pengganti Bertipografi Editorial (Khas Bilik Baca) */}
+      <div className="flex flex-col gap-1 z-10">
+        <span className="font-mono text-[10px] tracking-widest uppercase opacity-80">
+          {isPelajaran ? "Buku Pelajaran" : "Buku Bacaan"}
+        </span>
+        <h3 className="font-serif font-semibold text-base sm:text-lg leading-tight line-clamp-3">
+          {judul}
+        </h3>
+      </div>
+      <p className="font-sans text-xs opacity-90 line-clamp-2 z-10 font-normal">
+        {penulis}
+      </p>
+
+      {/* Pola Halus Punggung Buku Tekstur Kertas */}
+      <div
+        className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 pointer-events-none"
+        aria-hidden="true"
+      />
+
+      {/* Lapisan Atas: Gambar Sampul Asli jika tersedia */}
+      {sampulUrl && (
+        <img
           src={sampulUrl}
           alt={`Sampul buku ${judul}`}
-          fill
-          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-          className="object-cover"
-          priority={priority}
+          className="absolute inset-0 w-full h-full object-cover z-20 bg-paper-sunken"
+          loading="lazy"
         />
-      ) : (
-        /* Sampul Pengganti Bertipografi Editorial (Khas Bilik Baca) */
-        <>
-          <div className="flex flex-col gap-1 z-10">
-            <span className="font-mono text-[10px] tracking-widest uppercase opacity-80">
-              {isPelajaran ? "Buku Pelajaran" : "Buku Bacaan"}
-            </span>
-            <h3 className="font-serif font-semibold text-base sm:text-lg leading-tight line-clamp-3">
-              {judul}
-            </h3>
-          </div>
-          <p className="font-sans text-xs opacity-90 line-clamp-2 z-10 font-normal">
-            {penulis}
-          </p>
-
-          {/* Pola Halus Punggung Buku Tekstur Kertas */}
-          <div
-            className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 pointer-events-none"
-            aria-hidden="true"
-          />
-        </>
       )}
     </div>
   );

@@ -3,23 +3,14 @@ import { ArrowRight, BookOpen, Sparkles, GraduationCap, Compass } from "lucide-r
 import { db } from "@/db";
 import { buku, kategori, eksemplar } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { BookCover } from "@/components/ui/BookCover";
-import { BookSpineTick } from "@/components/ui/BookSpineTick";
+import { BookCatalogGrid, ItemKatalogPublik } from "@/components/ui/BookCatalogGrid";
 
 export const dynamic = "force-dynamic";
 
 export default async function KatalogBerandaPage() {
   let jumlahHiburan = 0;
   let jumlahPelajaran = 0;
-  let daftarBuku: Array<{
-    id: string;
-    judul: string;
-    penulis: string;
-    kelompok: "hiburan" | "pelajaran";
-    kategoriNama: string;
-    totalEksemplar: number;
-    tersediaEksemplar: number;
-  }> = [];
+  let daftarBuku: ItemKatalogPublik[] = [];
 
   try {
     const counts = await db
@@ -42,6 +33,13 @@ export default async function KatalogBerandaPage() {
         id: buku.id,
         judul: buku.judul,
         penulis: buku.penulis,
+        penerbit: buku.penerbit,
+        tahunTerbit: buku.tahunTerbit,
+        jumlahHalaman: buku.jumlahHalaman,
+        isbn: buku.isbn,
+        sinopsis: buku.sinopsis,
+        sampulBerkas: buku.sampulBerkas,
+        lokasiRak: buku.lokasiRak,
         kelompok: kategori.kelompok,
         kategoriNama: kategori.nama,
         totalEksemplar: sql<number>`count(${eksemplar.id})`,
@@ -51,13 +49,33 @@ export default async function KatalogBerandaPage() {
       .innerJoin(kategori, eq(buku.kategoriId, kategori.id))
       .leftJoin(eksemplar, eq(buku.id, eksemplar.bukuId))
       .where(sql`${buku.dihapusPada} IS NULL`)
-      .groupBy(buku.id, kategori.kelompok, kategori.nama)
-      .limit(6);
+      .groupBy(
+        buku.id,
+        buku.judul,
+        buku.penulis,
+        buku.penerbit,
+        buku.tahunTerbit,
+        buku.jumlahHalaman,
+        buku.isbn,
+        buku.sinopsis,
+        buku.sampulBerkas,
+        buku.lokasiRak,
+        kategori.kelompok,
+        kategori.nama
+      )
+      .limit(12);
 
     daftarBuku = rawBooks.map((b) => ({
       id: b.id,
       judul: b.judul,
       penulis: b.penulis,
+      penerbit: b.penerbit,
+      tahunTerbit: b.tahunTerbit,
+      jumlahHalaman: b.jumlahHalaman,
+      isbn: b.isbn,
+      sinopsis: b.sinopsis,
+      sampulUrl: b.sampulBerkas,
+      lokasiRak: b.lokasiRak,
       kelompok: b.kelompok as "hiburan" | "pelajaran",
       kategoriNama: b.kategoriNama,
       totalEksemplar: Number(b.totalEksemplar || 0),
@@ -70,7 +88,7 @@ export default async function KatalogBerandaPage() {
   return (
     <div className="space-y-12">
       {/* 1. Hero Desktop Widescreen: Dua Pintu Masuk Berdampingan */}
-      <section className="grid grid-cols-2 gap-8">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Panel Kiri: Hiburan (Jingga-Bata #B8381A) */}
         <Link
           href="/katalog/hiburan"
@@ -98,7 +116,6 @@ export default async function KatalogBerandaPage() {
             </span>
           </div>
 
-          {/* Hiasan Punggung Buku Tekstur Desktop */}
           <div
             className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"
             aria-hidden="true"
@@ -150,7 +167,7 @@ export default async function KatalogBerandaPage() {
             <h3 className="font-serif text-3xl font-semibold text-ink">Koleksi Terpopuler</h3>
           </div>
           <p className="text-sm text-ink-muted">
-            Status ketersediaan eksemplar terhubung langsung ke basis data server sekolah.
+            Klik pada kartu buku untuk melihat sinopsis, nomor ISBN, dan lokasi rak fisik.
           </p>
         </div>
 
@@ -165,36 +182,7 @@ export default async function KatalogBerandaPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-6 gap-6">
-            {daftarBuku.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-2.5 p-3.5 rounded-lg bg-surface border border-line/80 hover:border-ink/40 hover:shadow-sm transition-all group"
-              >
-                <BookCover
-                  judul={item.judul}
-                  penulis={item.penulis}
-                  kelompok={item.kelompok}
-                  className="group-hover:scale-[1.02] transition-transform duration-200"
-                />
-                <div className="flex flex-col gap-1 mt-1">
-                  <span className="font-mono text-[10px] text-ink-muted uppercase tracking-wider">
-                    {item.kategoriNama}
-                  </span>
-                  <h4 className="font-serif font-semibold text-sm leading-tight text-ink line-clamp-2">
-                    {item.judul}
-                  </h4>
-                  <p className="text-xs text-ink-muted line-clamp-1">{item.penulis}</p>
-
-                  <BookSpineTick
-                    total={item.totalEksemplar}
-                    tersedia={item.tersediaEksemplar}
-                    className="mt-2 pt-2 border-t border-line/60"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <BookCatalogGrid items={daftarBuku} />
         )}
       </section>
     </div>

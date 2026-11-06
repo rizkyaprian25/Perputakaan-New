@@ -8,6 +8,7 @@
  */
 
 import { pool } from "../src/db";
+import { BukuBaruSkema, PengaturanUpdateSkema } from "../src/contracts/skema";
 import { ulid } from "ulid";
 import assert from "assert";
 
@@ -114,9 +115,29 @@ async function main() {
     console.log("-> [LULUS] Constraint anti-pinjam-ganda terbukti bekerja di level basis data!");
 
     // -------------------------------------------------------------------------
-    // 5. Uji Sirkulasi Atomik: Pengembalian Buku
+    // 5. Uji Perpanjangan Masa Pinjam & Pengembalian Buku
     // -------------------------------------------------------------------------
-    console.log("\n[TEST 5] Menguji Pengembalian Buku & Pembebasan Eksemplar...");
+    console.log("\n[TEST 5] Menguji Perpanjangan Masa Pinjam (+7 Hari) & Pengembalian Buku...");
+    await connection.beginTransaction();
+    await connection.query(
+      `UPDATE peminjaman 
+       SET jatuh_tempo = DATE_ADD(jatuh_tempo, INTERVAL 7 DAY), perpanjangan_ke = perpanjangan_ke + 1
+       WHERE id = ?`,
+      [peminjamanId]
+    );
+    await connection.commit();
+
+    const [cekPerpanjang] = await connection.query(
+      "SELECT perpanjangan_ke FROM peminjaman WHERE id = ?",
+      [peminjamanId]
+    );
+    assert.strictEqual(
+      Number((cekPerpanjang as any)[0].perpanjangan_ke),
+      1,
+      "perpanjangan_ke harus bernilai 1 setelah diperpanjang"
+    );
+    console.log("-> [LULUS] Perpanjangan masa pinjam +7 hari berhasil diverifikasi.");
+
     await connection.beginTransaction();
     await connection.query(
       `UPDATE peminjaman 
@@ -132,9 +153,33 @@ async function main() {
     console.log("-> [LULUS] Pengembalian buku sukses & eksemplar kembali tersedia.");
 
     // -------------------------------------------------------------------------
-    // 6. Uji Presensi Kiosk: Idempotensi Harian
+    // 6. Uji Validasi Normalisasi ISBN Ber-strip & Skema Pengaturan
     // -------------------------------------------------------------------------
-    console.log("\n[TEST 6] Menguji Presensi Kiosk Harian & Idempotensi...");
+    console.log("\n[TEST 6] Menguji Normalisasi ISBN Ber-strip & Skema Pengaturan...");
+    const ujiIsbn = BukuBaruSkema.safeParse({
+      isbn: "978-602-03-3295-6",
+      judul: "Bumi",
+      penulis: "Tere Liye",
+      kategoriId,
+      jumlahEksemplar: 3,
+      sampulUrl: "https://books.google.com/books/content?id=test",
+    });
+    assert(ujiIsbn.success, "BukuBaruSkema harus menerima ISBN dengan tanda strip");
+    assert.strictEqual(ujiIsbn.data?.isbn, "9786020332956", "ISBN harus otomatis dinormalisasi tanpa strip");
+
+    const ujiPengaturan = PengaturanUpdateSkema.safeParse({
+      lamaPinjamHari: 7,
+      maksBukuPerAnggota: 3,
+      dendaPerHariRp: 1000,
+      namaPerpustakaan: "Perpustakaan Bilik Baca",
+    });
+    assert(ujiPengaturan.success, "PengaturanUpdateSkema harus valid");
+    console.log("-> [LULUS] Normalisasi ISBN & kontrak skema pengaturan berfungsi mulus.");
+
+    // -------------------------------------------------------------------------
+    // 7. Uji Presensi Kiosk: Idempotensi Harian
+    // -------------------------------------------------------------------------
+    console.log("\n[TEST 7] Menguji Presensi Kiosk Harian & Idempotensi...");
     const tglHariIni = new Date().toISOString().split("T")[0];
     const kunjunganId = ulid();
 
