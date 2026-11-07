@@ -461,6 +461,15 @@ export default function AdminBukuPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <a
+            href="/admin/buku/cetak-stiker"
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold transition-colors min-h-[44px]"
+            title="Cetak stiker QR massal untuk seluruh buku atau per judul"
+          >
+            <Printer className="w-4 h-4 text-status-tersedia" />
+            <span>Cetak QR Massal (A4)</span>
+          </a>
+
           <button
             onClick={() => setModalKategoriBuka(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold transition-colors min-h-[44px]"
@@ -617,14 +626,14 @@ export default function AdminBukuPage() {
                           <span>{item.totalEksemplar} Unit</span>
                         </button>
 
-                        <button
-                          onClick={() => bukaModalEksemplar(item, true)}
-                          title="Cetak Stiker Label QR Eksemplar"
+                        <a
+                          href={`/admin/buku/cetak-stiker?bukuId=${item.id}`}
+                          title="Cetak Stiker Label QR Buku Ini"
                           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-line bg-paper hover:bg-paper-sunken text-ink font-medium transition-colors"
                         >
                           <QrCode className="w-3.5 h-3.5 text-status-tersedia" />
-                          <span>Label QR</span>
-                        </button>
+                          <span>Cetak QR</span>
+                        </a>
 
                         <button
                           onClick={() => bukaModalEditBuku(item)}
@@ -1110,33 +1119,55 @@ export default function AdminBukuPage() {
                   </div>
                 </div>
 
-                {/* Lembar Stiker Fisik: Grid 3 Kolom Kompatibel Kertas Stiker Label A4 */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-2 print:grid-cols-3 print:gap-2.5 print:p-0 print:max-w-none">
+                {/* Lembar Stiker Fisik: Grid 3 Kolom Presisi Standar Perpustakaan */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-2 print:grid-cols-3 print:gap-[3mm] print:p-0 print:max-w-none">
                   {(eksemplarCetakTerpilih || daftarEksemplarAktif).map((eks) => (
                     <div
                       key={eks.id}
-                      className="border-2 border-dashed border-ink/40 rounded-xl p-2.5 bg-white flex items-center gap-2.5 print:border print:border-dashed print:border-black print:rounded-none print:p-2 print-card-unit break-inside-avoid shadow-xs"
+                      className="border border-dashed border-neutral-600 print:border-black bg-white flex flex-col justify-between overflow-hidden print-card-unit break-inside-avoid"
+                      style={{ height: "32mm" }}
                     >
-                      <div className="p-1 bg-white border border-black rounded shrink-0 print:p-0.5">
-                        <img
-                          src={`/api/v1/admin/qr?tipe=buku&id=${eks.id}`}
-                          alt={eks.kode}
-                          className="w-18 h-18 object-contain shrink-0 print:w-[20mm] print:h-[20mm]"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <span className="font-mono text-[8px] uppercase tracking-wider bg-black text-white px-1.5 py-0.5 rounded block w-fit font-bold print:text-[7px]">
-                          BILIK BACA • {detailBukuAktif.lokasiRak || "RAK"}
+                      {/* Kop Hitam Stiker */}
+                      <div
+                        className="bg-black text-white px-2.5 flex items-center justify-between shrink-0"
+                        style={{ height: "5.5mm" }}
+                      >
+                        <span className="font-sans font-bold text-[7pt] tracking-wider uppercase leading-none">
+                          BILIK BACA
                         </span>
-                        <p className="font-mono font-bold text-xs text-black tracking-tight print:text-[11px]">
-                          {eks.kode}
-                        </p>
-                        <p className="font-serif font-bold text-xs text-black line-clamp-2 leading-tight print:text-[10px]">
-                          {detailBukuAktif.judul}
-                        </p>
-                        <p className="font-sans text-[10px] text-gray-700 truncate print:text-[8px]">
-                          {detailBukuAktif.penulis}
-                        </p>
+                        <span className="font-mono font-bold text-[7pt] tracking-tight uppercase leading-none">
+                          RAK: {detailBukuAktif.lokasiRak || "UMUM"}
+                        </span>
+                      </div>
+
+                      {/* Isi Stiker: QR + Metadata */}
+                      <div
+                        className="flex items-center gap-2.5 px-2 py-1.5 flex-1 min-h-0 bg-white"
+                        style={{ height: "26.5mm" }}
+                      >
+                        <div
+                          className="p-0.5 bg-white border border-black shrink-0 flex items-center justify-center"
+                          style={{ width: "21mm", height: "21mm" }}
+                        >
+                          <img
+                            src={`/api/v1/admin/qr?tipe=buku&id=${eks.id}`}
+                            alt={eks.kode}
+                            className="w-full h-full object-contain block"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 flex flex-col justify-between h-[21mm]">
+                          <div className="border-b border-black/40 pb-0.5">
+                            <span className="font-mono font-extrabold text-[10pt] text-black tracking-tight block leading-none">
+                              {eks.kode}
+                            </span>
+                          </div>
+                          <p className="font-serif font-bold text-[8pt] text-black line-clamp-2 leading-[1.15] my-auto">
+                            {detailBukuAktif.judul}
+                          </p>
+                          <p className="font-sans text-[6.5pt] text-neutral-700 truncate border-t border-black/15 pt-0.5 leading-none">
+                            {detailBukuAktif.penulis}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ))}

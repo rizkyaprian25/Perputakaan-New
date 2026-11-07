@@ -31,6 +31,10 @@ export default function AdminLayout({
 
   // Jangan jalankan pengecekan jika sedang di halaman login
   const isLoginPage = pathname === "/admin/login";
+  const isPrintPage =
+    pathname.startsWith("/admin/buku/cetak-stiker") ||
+    pathname.startsWith("/admin/anggota/cetak-kartu") ||
+    pathname.startsWith("/admin/sirkulasi/cetak-struk");
 
   useEffect(() => {
     if (isLoginPage) {
@@ -80,6 +84,11 @@ export default function AdminLayout({
         </div>
       </div>
     );
+  }
+
+  // Jika halaman cetak dokumen fisik (stiker QR buku, kartu anggota, struk), render murni tanpa sidebar/header
+  if (isPrintPage) {
+    return <div className="min-h-screen bg-paper-sunken/50 print:bg-white font-sans">{children}</div>;
   }
 
   return (

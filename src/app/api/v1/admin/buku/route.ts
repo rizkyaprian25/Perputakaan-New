@@ -22,6 +22,35 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") || "";
+  const mode = searchParams.get("mode") || "";
+
+  // Mode khusus: tarik seluruh eksemplar fisik lengkap beserta metadata bukunya untuk Cetak Stiker QR Massal
+  if (mode === "stiker_massal") {
+    const connection = await pool.getConnection();
+    try {
+      const [rows]: any = await connection.query(
+        `SELECT 
+           e.id as eksemplarId,
+           e.kode as kode,
+           e.status as status,
+           b.id as bukuId,
+           b.judul as judul,
+           b.penulis as penulis,
+           b.isbn as isbn,
+           b.lokasi_rak as lokasiRak,
+           k.nama as kategoriNama,
+           k.kelompok as kelompok
+         FROM eksemplar e
+         INNER JOIN buku b ON e.buku_id = b.id
+         INNER JOIN kategori k ON b.kategori_id = k.id
+         WHERE b.dihapus_pada IS NULL
+         ORDER BY b.dibuat_pada DESC, e.kode ASC`
+      );
+      return responSukses(rows, "Daftar seluruh eksemplar stiker berhasil diambil");
+    } finally {
+      connection.release();
+    }
+  }
 
   const dataBuku = await db
     .select({

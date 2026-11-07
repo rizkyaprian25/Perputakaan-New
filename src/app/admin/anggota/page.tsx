@@ -408,16 +408,15 @@ export default function AdminAnggotaPage() {
             <span>{isSyncingNetri ? "Menyinkronkan..." : "Sinkronisasi Netri SMS"}</span>
           </button>
 
-          <button
-            onClick={() => {
-              setKelasDipilihCetak(filterKelas !== "semua" ? filterKelas : "semua");
-              setModalCetakMassalBuka(true);
-            }}
+          <a
+            href={`/admin/anggota/cetak-kartu?kelas=${
+              filterKelas !== "semua" ? encodeURIComponent(filterKelas) : "semua"
+            }`}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold transition-colors min-h-[44px]"
           >
-            <Printer className="w-4 h-4 text-ink-muted" />
+            <Printer className="w-4 h-4 text-status-tersedia" />
             <span>Cetak Kartu Massal (A4)</span>
-          </button>
+          </a>
 
           <button
             onClick={() => {
@@ -562,16 +561,14 @@ export default function AdminAnggotaPage() {
                             <span>Edit</span>
                           </button>
 
-                          <button
-                            onClick={() => {
-                              setSelectedAnggota(m);
-                              setModalCetakBuka(true);
-                            }}
+                          <a
+                            href={`/admin/anggota/cetak-kartu?id=${m.id}`}
+                            title="Cetak Kartu Anggota QR Siswa Ini"
                             className="px-2.5 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-sans font-semibold inline-flex items-center gap-1.5"
                           >
-                            <QrCode className="w-3.5 h-3.5" />
+                            <QrCode className="w-3.5 h-3.5 text-status-tersedia" />
                             <span>Kartu QR</span>
-                          </button>
+                          </a>
                         </div>
                       </td>
                     </tr>
