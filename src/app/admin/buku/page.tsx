@@ -429,8 +429,8 @@ export default function AdminBukuPage() {
         </div>
       )}
 
-      {/* Header Halaman Buku */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
+      {/* Header Halaman Buku - Tersembunyi saat Cetak */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 print:hidden">
         <div>
           <h1 className="font-serif text-3xl font-semibold text-ink">Katalog & Eksemplar Buku</h1>
           <p className="text-xs text-ink-muted mt-0.5">
@@ -465,8 +465,8 @@ export default function AdminBukuPage() {
         </div>
       </div>
 
-      {/* Bar Pencarian & Filter Kelompok */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-surface p-4 rounded-xl border border-line shadow-sm">
+      {/* Bar Pencarian & Filter Kelompok - Tersembunyi saat Cetak */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-surface p-4 rounded-xl border border-line shadow-sm print:hidden">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -503,8 +503,8 @@ export default function AdminBukuPage() {
         </div>
       </div>
 
-      {/* Tabel Daftar Buku */}
-      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden">
+      {/* Tabel Daftar Buku - Tersembunyi saat Cetak */}
+      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden">
         <div className="px-6 py-4 border-b border-line flex items-center justify-between">
           <h2 className="font-serif font-bold text-base text-ink">Daftar Koleksi Terdaftar</h2>
           <span className="font-mono text-xs text-ink-muted">
@@ -633,7 +633,7 @@ export default function AdminBukuPage() {
       {/* MODAL 1: CARI BUKU ONLINE (GOOGLE BOOKS & OPEN LIBRARY)                   */}
       {/* ========================================================================= */}
       {modalOnlineBuka && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-3xl w-full p-6 shadow-2xl flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between border-b border-line pb-4 mb-4">
               <div>
@@ -722,7 +722,7 @@ export default function AdminBukuPage() {
       {/* MODAL 2: FORM TAMBAH / EDIT BUKU & PRATINJAU SAMPUL                       */}
       {/* ========================================================================= */}
       {modalFormBuka && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-3xl w-full p-6 shadow-2xl flex flex-col max-h-[92vh]">
             <div className="flex items-center justify-between border-b border-line pb-4 mb-4">
               <div>
@@ -1090,8 +1090,8 @@ export default function AdminBukuPage() {
                 </div>
               </div>
             ) : (
-              /* TAMPILAN TABEL MANAJEMEN UNIT EKSEMPLAR */
-              <div className="flex-1 overflow-y-auto space-y-4">
+              /* TAMPILAN TABEL MANAJEMEN UNIT EKSEMPLAR - Tersembunyi saat Cetak */
+              <div className="flex-1 overflow-y-auto space-y-4 print:hidden">
                 {/* Bar Tambah Stok Eksemplar */}
                 <form
                   onSubmit={handleTambahEksemplar}
@@ -1215,7 +1215,7 @@ export default function AdminBukuPage() {
       {/* MODAL 4: TAMBAH KATEGORI CEPAT                                            */}
       {/* ========================================================================= */}
       {modalKategoriBuka && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="font-serif font-bold text-lg text-ink">Tambah Kategori Buku Baru</h3>
@@ -1281,7 +1281,7 @@ export default function AdminBukuPage() {
       {/* MODAL 5: KONFIRMASI HAPUS BUKU                                            */}
       {/* ========================================================================= */}
       {bukuAkanDihapus && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-danger">
               <AlertCircle className="w-6 h-6 shrink-0" />
