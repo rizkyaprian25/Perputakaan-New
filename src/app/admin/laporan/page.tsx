@@ -312,7 +312,7 @@ export default function AdminLaporanPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-paper-sunken/60 font-mono uppercase text-ink-muted border-b border-line">
+              <thead className="bg-paper-sunken/60 font-sans text-[11px] font-semibold tracking-wider uppercase text-ink-muted border-b border-line">
                 <tr>
                   <th className="py-3 px-4">Kode Eksemplar</th>
                   <th className="py-3 px-4">Judul Buku</th>

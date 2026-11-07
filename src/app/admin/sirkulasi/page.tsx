@@ -20,6 +20,7 @@ import {
   Clock,
   RotateCcw,
   Camera,
+  ExternalLink,
 } from "lucide-react";
 import { QrCameraScanner } from "@/components/ui/QrCameraScanner";
 
@@ -113,6 +114,17 @@ export default function SirkulasiWorkstationPage() {
   const tampilkanNotif = (pesan: string, tipe: "sukses" | "error") => {
     setNotif({ pesan, tipe });
     setTimeout(() => setNotif(null), 4500);
+  };
+
+  // Fungsi Cetak Bersih Slip Sirkulasi: Mengisolasi 100% Elemen Layar Komputer
+  const cetakStrukTerisolasi = () => {
+    document.body.setAttribute("data-print-mode", "struk");
+    const bersihkanSetelahCetak = () => {
+      document.body.removeAttribute("data-print-mode");
+      window.removeEventListener("afterprint", bersihkanSetelahCetak);
+    };
+    window.addEventListener("afterprint", bersihkanSetelahCetak);
+    window.print();
   };
 
   // Muat daftar peminjaman aktif
@@ -257,8 +269,8 @@ export default function SirkulasiWorkstationPage() {
         throw new Error(json.pesan || "Gagal mencatat peminjaman");
       }
 
-      // Tampilkan modal struk bukti peminjaman
-      setStrukPinjam({
+      // Tampilkan modal struk bukti peminjaman dan simpan ke sessionStorage untuk rute mandiri
+      const dataStrukFinal: BuktiStrukPinjam = {
         batchId: json.data.batchId,
         namaPeminjam: anggotaPeminjam.nama,
         nomorInduk: anggotaPeminjam.nomorInduk,
@@ -267,7 +279,13 @@ export default function SirkulasiWorkstationPage() {
         dipinjamPada: json.data.dipinjamPada,
         jatuhTempo: json.data.jatuhTempo,
         daftarBuku: json.data.daftarBuku,
-      });
+      };
+      setStrukPinjam(dataStrukFinal);
+      try {
+        sessionStorage.setItem("bilikbaca_last_struk", JSON.stringify(dataStrukFinal));
+      } catch (e) {
+        console.warn("Gagal menyimpan ke sessionStorage:", e);
+      }
 
       tampilkanNotif(
         `Sukses! ${json.data.jumlahBuku} buku berhasil dipinjamkan hingga ${json.data.jatuhTempo}.`,
@@ -372,7 +390,7 @@ export default function SirkulasiWorkstationPage() {
   const totalTerlambat = daftarPinjamanAktif.filter((p) => p.terlambat).length;
 
   return (
-    <div className="space-y-6 max-w-[1440px]">
+    <div className="space-y-6 max-w-[1440px] sirkulasi-view">
       {/* Toast Notifikasi */}
       {notif && (
         <div
@@ -392,7 +410,7 @@ export default function SirkulasiWorkstationPage() {
       )}
 
       {/* Header Meja Sirkulasi */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 print:hidden sirkulasi-header">
         <div>
           <h1 className="font-serif text-3xl font-semibold text-ink">Meja Sirkulasi Komputer</h1>
           <p className="text-xs text-ink-muted mt-0.5">
@@ -449,9 +467,14 @@ export default function SirkulasiWorkstationPage() {
           <div className="col-span-12 lg:col-span-5 space-y-6">
             <div className="bg-surface border border-line rounded-xl p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-line pb-3">
-                <span className="font-mono text-xs uppercase font-bold text-ink">
-                  1. Identitas Peminjam
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-ink text-paper text-[10px] font-bold flex items-center justify-center font-sans">
+                    1
+                  </span>
+                  <span className="font-sans text-xs uppercase font-bold text-ink tracking-wider">
+                    Identitas Peminjam
+                  </span>
+                </div>
                 {anggotaPeminjam && (
                   <button
                     onClick={() => {
@@ -459,7 +482,7 @@ export default function SirkulasiWorkstationPage() {
                       setInfoPinjamAnggota(null);
                       setKeranjangBuku([]);
                     }}
-                    className="text-xs text-danger hover:underline"
+                    className="text-xs text-danger hover:underline font-medium"
                   >
                     Ganti Siswa
                   </button>
@@ -483,7 +506,7 @@ export default function SirkulasiWorkstationPage() {
                       value={inputAnggota}
                       onChange={(e) => setInputAnggota(e.target.value)}
                       placeholder="Scan kartu atau ketik NIS..."
-                      className="flex-1 px-3.5 py-2.5 rounded-md border border-line bg-white font-mono text-sm focus:border-ink min-h-[44px]"
+                      className="flex-1 px-3.5 py-2.5 rounded-md border border-line bg-white font-sans text-sm focus:border-ink min-h-[44px]"
                       disabled={loadingAnggota}
                     />
                     <button
@@ -546,10 +569,15 @@ export default function SirkulasiWorkstationPage() {
           <div className="col-span-12 lg:col-span-7 space-y-6">
             <div className="bg-surface border border-line rounded-xl p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-line pb-3">
-                <span className="font-mono text-xs uppercase font-bold text-ink">
-                  2. Eksemplar Buku yang Dipinjam
-                </span>
-                <span className="font-mono text-xs text-ink-muted">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-ink text-paper text-[10px] font-bold flex items-center justify-center font-sans">
+                    2
+                  </span>
+                  <span className="font-sans text-xs uppercase font-bold text-ink tracking-wider">
+                    Eksemplar Buku yang Dipinjam
+                  </span>
+                </div>
+                <span className="font-sans text-xs text-ink-muted bg-paper-sunken px-2.5 py-0.5 rounded-full font-medium">
                   {keranjangBuku.length} / 5 Buku
                 </span>
               </div>
@@ -563,11 +591,11 @@ export default function SirkulasiWorkstationPage() {
                   onChange={(e) => setInputBuku(e.target.value)}
                   placeholder={
                     anggotaPeminjam
-                      ? "Scan Barcode/QR Eksemplar Buku (misal: BB-000001)..."
+                      ? "Scan Barcode/QR Eksemplar Buku (misal: BB-NVL-0001)..."
                       : "Pilih siswa terlebih dahulu di sisi kiri..."
                   }
                   disabled={!anggotaPeminjam || loadingBuku}
-                  className="flex-1 px-4 py-2.5 rounded-md border border-line bg-white font-mono text-sm focus:border-ink min-h-[44px] disabled:bg-paper-sunken/40"
+                  className="flex-1 px-4 py-2.5 rounded-md border border-line bg-white font-sans text-sm focus:border-ink min-h-[44px] disabled:bg-paper-sunken/40"
                 />
                 <button
                   type="button"
@@ -591,7 +619,7 @@ export default function SirkulasiWorkstationPage() {
               {/* Tabel Keranjang Eksemplar */}
               <div className="border border-line rounded-lg overflow-hidden">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-paper-sunken/60 font-mono uppercase text-ink-muted border-b border-line">
+                  <thead className="bg-paper-sunken/60 font-sans text-[11px] font-semibold tracking-wider uppercase text-ink-muted border-b border-line">
                     <tr>
                       <th className="py-2.5 px-3">Kode</th>
                       <th className="py-2.5 px-3">Judul Buku</th>
@@ -602,7 +630,7 @@ export default function SirkulasiWorkstationPage() {
                   <tbody className="divide-y divide-line/60">
                     {keranjangBuku.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-ink-muted">
+                        <td colSpan={4} className="py-8 text-center text-ink-muted font-sans">
                           Keranjang masih kosong. Scan label QR pada buku siswa.
                         </td>
                       </tr>
@@ -677,8 +705,8 @@ export default function SirkulasiWorkstationPage() {
                   type="text"
                   value={inputKembali}
                   onChange={(e) => setInputKembali(e.target.value)}
-                  placeholder="Scan QR/Barcode Eksemplar (misal: BB-000001)..."
-                  className="flex-1 px-4 py-3 rounded-md border border-line bg-white font-mono text-sm focus:border-ink min-h-[44px]"
+                  placeholder="Scan QR/Barcode Eksemplar (misal: BB-NVL-0001)..."
+                  className="flex-1 px-4 py-3 rounded-md border border-line bg-white font-sans text-sm focus:border-ink min-h-[44px]"
                   disabled={loadingKembali}
                 />
                 <button
@@ -707,12 +735,12 @@ export default function SirkulasiWorkstationPage() {
               <h3 className="font-serif font-semibold text-lg text-ink">
                 Buku yang Baru Saja Dikembalikan
               </h3>
-              <span className="font-mono text-xs text-ink-muted">Sesi Meja Ini</span>
+              <span className="font-sans text-xs text-ink-muted font-medium">Sesi Meja Ini</span>
             </div>
 
             <div className="divide-y divide-line/60">
               {riwayatKembali.length === 0 ? (
-                <p className="py-8 text-center text-xs text-ink-muted">
+                <p className="py-8 text-center text-xs text-ink-muted font-sans">
                   Belum ada buku yang dikembalikan pada sesi ini.
                 </p>
               ) : (
@@ -745,7 +773,7 @@ export default function SirkulasiWorkstationPage() {
       {/* ========================================================================= */}
       {/* TAB 3 / PANEL BAWAH: PEMANTAUAN PINJAMAN AKTIF & PERPANJANGAN             */}
       {/* ========================================================================= */}
-      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden">
+      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden sirkulasi-table">
         <div className="px-6 py-4 border-b border-line flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="font-serif font-semibold text-lg text-ink">
@@ -765,15 +793,15 @@ export default function SirkulasiWorkstationPage() {
                 value={cariAktif}
                 onChange={(e) => setCariAktif(e.target.value)}
                 placeholder="Cari siswa, NIS, judul, kode..."
-                className="pl-8 pr-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[36px] w-56"
+                className="pl-8 pr-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[36px] w-56 font-sans"
               />
             </div>
 
             {/* Filter Semua / Terlambat */}
-            <div className="flex items-center rounded-md border border-line bg-paper-sunken/40 p-0.5 text-xs">
+            <div className="flex items-center rounded-md border border-line bg-paper-sunken/40 p-0.5 text-xs font-sans">
               <button
                 onClick={() => setFilterAktif("semua")}
-                className={`px-3 py-1 rounded ${
+                className={`px-3 py-1 rounded font-medium ${
                   filterAktif === "semua" ? "bg-white text-ink font-semibold shadow-sm" : "text-ink-muted"
                 }`}
               >
@@ -781,7 +809,7 @@ export default function SirkulasiWorkstationPage() {
               </button>
               <button
                 onClick={() => setFilterAktif("terlambat")}
-                className={`px-3 py-1 rounded ${
+                className={`px-3 py-1 rounded font-medium ${
                   filterAktif === "terlambat"
                     ? "bg-danger text-white font-semibold shadow-sm"
                     : "text-ink-muted"
@@ -795,7 +823,7 @@ export default function SirkulasiWorkstationPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-paper-sunken/60 font-mono uppercase text-ink-muted border-b border-line">
+            <thead className="bg-paper-sunken/60 font-sans text-[11px] font-semibold tracking-wider uppercase text-ink-muted border-b border-line">
               <tr>
                 <th className="py-3 px-4">Kode Eksemplar</th>
                 <th className="py-3 px-4">Judul Buku</th>
@@ -1015,15 +1043,25 @@ export default function SirkulasiWorkstationPage() {
             </div>
 
             {/* Tombol Aksi - Tersembunyi saat Cetak */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-line print:hidden">
+            <div className="flex justify-end items-center gap-2 pt-2 border-t border-line print:hidden">
               <button
                 onClick={() => setStrukPinjam(null)}
                 className="px-4 py-2 rounded-lg border border-line bg-surface text-ink text-xs font-semibold hover:bg-paper-sunken min-h-[40px]"
               >
                 Tutup
               </button>
+              <a
+                href="/admin/sirkulasi/cetak-struk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-line bg-white hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[40px] shadow-xs"
+                title="Buka slip cetak mandiri tanpa gangguan latar belakang"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Lembar Mandiri</span>
+              </a>
               <button
-                onClick={() => window.print()}
+                onClick={cetakStrukTerisolasi}
                 className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5 min-h-[40px] shadow-sm"
               >
                 <Printer className="w-4 h-4" />

@@ -28,6 +28,7 @@ import {
   Calendar,
   Clock,
   Layers,
+  ExternalLink,
 } from "lucide-react";
 
 const BARIS_PER_HALAMAN = 25;
@@ -90,6 +91,17 @@ export default function AdminAnggotaPage() {
   const tampilkanToast = (pesan: string, tipe: "sukses" | "error") => {
     setToast({ pesan, tipe });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  // Fungsi Cetak Bersih Kartu Anggota: Menghilangkan 100% Elemen Web Latar Belakang
+  const cetakKartuTerisolasi = () => {
+    document.body.setAttribute("data-print-mode", "kartu");
+    const bersihkanSetelahCetak = () => {
+      document.body.removeAttribute("data-print-mode");
+      window.removeEventListener("afterprint", bersihkanSetelahCetak);
+    };
+    window.addEventListener("afterprint", bersihkanSetelahCetak);
+    window.print();
   };
 
   const muatData = async () => {
@@ -355,7 +367,7 @@ export default function AdminAnggotaPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1440px]">
+    <div className="space-y-6 max-w-[1440px] anggota-view">
       {/* Toast Alert */}
       {toast && (
         <div
@@ -375,7 +387,7 @@ export default function AdminAnggotaPage() {
       )}
 
       {/* Header Halaman Anggota */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4 print:hidden anggota-header">
         <div>
           <h1 className="font-serif text-3xl font-semibold text-ink">Data Anggota Siswa & Guru</h1>
           <p className="text-xs text-ink-muted mt-0.5">
@@ -430,7 +442,7 @@ export default function AdminAnggotaPage() {
       </div>
 
       {/* Tabel Anggota + Pencarian & Filter */}
-      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden">
+      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden anggota-table">
         <div className="px-6 py-4 border-b border-line flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h2 className="font-serif font-bold text-base text-ink">Daftar Anggota Terdaftar</h2>
@@ -503,7 +515,7 @@ export default function AdminAnggotaPage() {
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-paper-sunken/60 font-mono uppercase text-ink-muted border-b border-line">
+                <thead className="bg-paper-sunken/60 font-sans text-[11px] font-semibold tracking-wider uppercase text-ink-muted border-b border-line">
                   <tr>
                     <th className="py-3 px-4">Nomor Induk</th>
                     <th className="py-3 px-4">Nama Lengkap</th>
@@ -518,11 +530,11 @@ export default function AdminAnggotaPage() {
                     <tr key={m.id} className="hover:bg-paper-sunken/20 transition-colors">
                       <td className="py-3 px-4 font-mono font-bold text-ink">{m.nomorInduk}</td>
                       <td className="py-3 px-4 font-medium text-ink">{m.nama}</td>
-                      <td className="py-3 px-4 capitalize font-mono text-ink-muted">{m.jenis}</td>
-                      <td className="py-3 px-4 font-mono">{m.kelas || "Umum"}</td>
+                      <td className="py-3 px-4 capitalize font-sans text-ink-muted">{m.jenis}</td>
+                      <td className="py-3 px-4 font-sans">{m.kelas || "Umum"}</td>
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold ${
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-sans uppercase font-bold ${
                             m.status === "aktif"
                               ? "bg-status-tersedia/10 text-status-tersedia"
                               : "bg-danger/10 text-danger"
@@ -555,7 +567,7 @@ export default function AdminAnggotaPage() {
                               setSelectedAnggota(m);
                               setModalCetakBuka(true);
                             }}
-                            className="px-2.5 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-mono font-semibold inline-flex items-center gap-1.5"
+                            className="px-2.5 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-sans font-semibold inline-flex items-center gap-1.5"
                           >
                             <QrCode className="w-3.5 h-3.5" />
                             <span>Kartu QR</span>
@@ -1023,9 +1035,19 @@ export default function AdminAnggotaPage() {
               >
                 Batal
               </button>
+              <a
+                href={`/admin/anggota/cetak-kartu?id=${selectedAnggota.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-line bg-white hover:bg-paper-sunken text-ink text-xs font-semibold shadow-xs"
+                title="Buka halaman cetak mandiri tanpa gangguan latar belakang"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Lembar Mandiri</span>
+              </a>
               <button
-                onClick={() => window.print()}
-                className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5"
+                onClick={cetakKartuTerisolasi}
+                className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5 shadow-sm"
               >
                 <Printer className="w-4 h-4" />
                 <span>Cetak Kartu Fisik</span>
@@ -1055,7 +1077,7 @@ export default function AdminAnggotaPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {/* Pilihan Kelas untuk Dicetak */}
                 <select
                   value={kelasDipilihCetak}
@@ -1070,8 +1092,19 @@ export default function AdminAnggotaPage() {
                   ))}
                 </select>
 
+                <a
+                  href={`/admin/anggota/cetak-kartu?kelas=${kelasDipilihCetak}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-line bg-white hover:bg-paper-sunken text-ink text-xs font-semibold shadow-xs"
+                  title="Buka halaman cetak mandiri tanpa gangguan latar belakang"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Lembar Mandiri</span>
+                </a>
+
                 <button
-                  onClick={() => window.print()}
+                  onClick={cetakKartuTerisolasi}
                   className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5 shadow-sm"
                 >
                   <Printer className="w-4 h-4" />

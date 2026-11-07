@@ -189,7 +189,7 @@ export default function AdminLayout({
                 <p className="text-xs font-bold text-ink leading-tight capitalize">
                   {penggunaAktif?.username || "Petugas"}
                 </p>
-                <span className="font-mono text-[10px] text-ink-muted uppercase">
+                <span className="font-sans text-[11px] text-ink-muted">
                   {penggunaAktif?.peran === "admin" ? "Administrator" : "Petugas"}
                 </span>
               </div>
@@ -221,20 +221,23 @@ export default function AdminLayout({
 
       {/* 2. Area Konten Utama Desktop */}
       <div className="flex-1 flex flex-col min-w-0 print:block print:w-full">
-        <header className="bg-surface/90 backdrop-blur-sm border-b border-line px-8 py-4 flex items-center justify-between print:hidden">
-          <div className="flex items-center gap-3">
-            <span className="font-serif font-bold text-lg text-ink">Bilik Baca</span>
-            <span className="text-ink-muted">/</span>
-            <span className="font-mono text-xs text-ink-muted">Workstation Petugas</span>
+        <header className="bg-surface/90 backdrop-blur-sm border-b border-line px-8 py-3.5 flex items-center justify-between print:hidden">
+          <div className="flex items-center gap-2.5 text-xs">
+            <span className="font-serif font-bold text-base text-ink tracking-tight">Bilik Baca</span>
+            <span className="text-ink-muted/50">/</span>
+            <span className="font-sans text-xs text-ink-muted font-medium">Workstation Petugas</span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono text-ink-muted">
-            <div className="flex items-center gap-2 bg-paper-sunken/60 px-3 py-1.5 rounded-md border border-line">
-              <Monitor className="w-3.5 h-3.5" />
-              <span>Server Lokal Laragon (127.0.0.1:3306)</span>
+          <div className="flex items-center gap-4 text-xs font-sans text-ink-muted">
+            <div className="flex items-center gap-2 bg-paper-sunken/60 px-3 py-1.5 rounded-lg border border-line">
+              <Monitor className="w-3.5 h-3.5 text-ink-muted" />
+              <span>Server Lokal Laragon</span>
+              <span className="font-mono text-[11px] bg-white px-1.5 py-0.5 rounded border border-line text-ink">
+                127.0.0.1:3306
+              </span>
             </div>
             <div className="flex items-center gap-1.5 text-status-tersedia font-semibold">
-              <span className="w-2 h-2 rounded-full bg-status-tersedia" />
+              <span className="w-2 h-2 rounded-full bg-status-tersedia animate-pulse" />
               <span>Aktif</span>
             </div>
           </div>

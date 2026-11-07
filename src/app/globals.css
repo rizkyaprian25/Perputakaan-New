@@ -88,6 +88,7 @@
   /* Reset Total Latar Belakang & Warna untuk Kertas Fisik Bersih */
   html, body {
     background-color: #ffffff !important;
+    background: #ffffff !important;
     color: #000000 !important;
     font-size: 11pt !important;
     line-height: 1.35 !important;
@@ -101,14 +102,32 @@
     print-color-adjust: exact !important;
   }
 
-  /* Hilangkan Seluruh Navigasi Web, Sidebar, dan Kontrol Antarmuka */
+  /* Hilangkan Seluruh Navigasi Web, Sidebar, Header Admin, dan Kontrol Antarmuka */
   aside,
-  header:not(.print-header),
+  header,
   nav,
   button,
+  input,
+  select,
+  textarea,
   .print-hidden,
   .print\:hidden {
     display: none !important;
+  }
+
+  /* ISOLASI TOTAL: Jika sedang mencetak dokumen berlabel printable-area,
+     sembunyikan SELURUH elemen lain di halaman secara agresif */
+  body[data-print-mode="stiker"] .katalog-view,
+  body[data-print-mode="stiker"] .katalog-header,
+  body[data-print-mode="stiker"] .katalog-table,
+  body[data-print-mode="kartu"] .anggota-view,
+  body[data-print-mode="kartu"] .anggota-table,
+  body[data-print-mode="struk"] .sirkulasi-view,
+  body[data-print-mode="struk"] .sirkulasi-table {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
   /* Matikan bayangan kartu, blur backdrop modal, dan animasi */
@@ -120,7 +139,7 @@
     transition: none !important;
   }
 
-  /* Netralkan posisi fixed modal agar dicetak sebagai dokumen datar */
+  /* Netralkan posisi fixed modal saat mencetak agar mengalir alami di kertas */
   .fixed {
     position: static !important;
     inset: auto !important;

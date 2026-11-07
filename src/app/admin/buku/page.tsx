@@ -14,6 +14,7 @@ import {
   Layers,
   Printer,
   BookOpen,
+  ExternalLink,
 } from "lucide-react";
 import { BookSpineTick } from "@/components/ui/BookSpineTick";
 import { BookCover } from "@/components/ui/BookCover";
@@ -76,6 +77,17 @@ export default function AdminBukuPage() {
   const tampilkanToast = (pesan: string, tipe: "sukses" | "error") => {
     setToast({ pesan, tipe });
     setTimeout(() => setToast(null), 4500);
+  };
+
+  // Fungsi Cetak Bersih: Mengisolasi Dokumen dan Menghilangkan 100% Elemen Background
+  const cetakStikerTerisolasi = () => {
+    document.body.setAttribute("data-print-mode", "stiker");
+    const bersihkanSetelahCetak = () => {
+      document.body.removeAttribute("data-print-mode");
+      window.removeEventListener("afterprint", bersihkanSetelahCetak);
+    };
+    window.addEventListener("afterprint", bersihkanSetelahCetak);
+    window.print();
   };
 
   const muatData = async () => {
@@ -211,7 +223,17 @@ export default function AdminBukuPage() {
     setFormSampulUrl(item.sampulUrl || "");
     setFormSumber(item.sumber || "google_books");
     setFormJumlahEksemplar(3);
-    setFormLokasiRak("R-01");
+
+    // Otomatis arahkan ke kelompok pelajaran jika bersumber dari SIBI Kemendikbudristek
+    if (item.sumber === "kemendikbud_sibi") {
+      const katPelajaran = daftarKategori.find((k) => k.kelompok === "pelajaran");
+      if (katPelajaran) {
+        setFormKategoriId(katPelajaran.id);
+      }
+      setFormLokasiRak("P-01");
+    } else {
+      setFormLokasiRak("R-01");
+    }
 
     setModalOnlineBuka(false);
     setModalFormBuka(true);
@@ -410,7 +432,7 @@ export default function AdminBukuPage() {
   const kategoriTerpilihObj = daftarKategori.find((k) => k.id === formKategoriId);
 
   return (
-    <div className="space-y-6 max-w-[1440px]">
+    <div className="space-y-6 max-w-[1440px] katalog-view">
       {/* Toast Alert */}
       {toast && (
         <div
@@ -430,7 +452,7 @@ export default function AdminBukuPage() {
       )}
 
       {/* Header Halaman Buku - Tersembunyi saat Cetak */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 print:hidden katalog-header">
         <div>
           <h1 className="font-serif text-3xl font-semibold text-ink">Katalog & Eksemplar Buku</h1>
           <p className="text-xs text-ink-muted mt-0.5">
@@ -504,7 +526,7 @@ export default function AdminBukuPage() {
       </div>
 
       {/* Tabel Daftar Buku - Tersembunyi saat Cetak */}
-      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden">
+      <div className="bg-surface border border-line rounded-xl shadow-sm overflow-hidden print:hidden katalog-table">
         <div className="px-6 py-4 border-b border-line flex items-center justify-between">
           <h2 className="font-serif font-bold text-base text-ink">Daftar Koleksi Terdaftar</h2>
           <span className="font-mono text-xs text-ink-muted">
@@ -528,7 +550,7 @@ export default function AdminBukuPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-line bg-paper-sunken/50 text-ink-muted font-mono uppercase">
+                <tr className="border-b border-line bg-paper-sunken/50 text-ink-muted font-sans text-[11px] font-semibold tracking-wider uppercase">
                   <th className="py-3.5 px-6">Judul & Penulis</th>
                   <th className="py-3.5 px-4">Kelompok</th>
                   <th className="py-3.5 px-4">Kategori</th>
@@ -638,10 +660,10 @@ export default function AdminBukuPage() {
             <div className="flex items-center justify-between border-b border-line pb-4 mb-4">
               <div>
                 <h3 className="font-serif font-bold text-xl text-ink">
-                  Cari Buku Online (Google Books & Open Library)
+                  Cari Buku Online & Pelajaran Nasional
                 </h3>
                 <p className="text-xs text-ink-muted mt-0.5">
-                  Ketik judul, penulis, atau pindai barcode ISBN untuk mengisi otomatis metadata & sampul.
+                  Terintegrasi resmi dengan <strong>SIBI Kemendikbudristek (Kurikulum Merdeka)</strong>, Katalog Buku Indonesia, dan Google Books.
                 </p>
               </div>
               <button
@@ -657,23 +679,23 @@ export default function AdminBukuPage() {
                 type="text"
                 value={queryOnline}
                 onChange={(e) => setQueryOnline(e.target.value)}
-                placeholder="Ketik judul buku, penulis, atau ISBN (misal: 9789793062792 / Bumi Manusia)..."
-                className="flex-1 px-4 py-2.5 rounded-lg border border-line text-sm focus:border-ink"
+                placeholder="Ketik judul buku pelajaran (mis. Matematika Kelas 7, Bahasa Indonesia) atau nomor ISBN..."
+                className="flex-1 px-4 py-2.5 rounded-lg border border-line text-sm focus:border-ink font-sans"
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={loadingOnline || !queryOnline.trim()}
-                className="px-5 py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 disabled:opacity-50 min-h-[44px]"
               >
-                {loadingOnline ? "Mencari..." : "Cari Online"}
+                {loadingOnline ? "Mencari..." : "Cari Buku"}
               </button>
             </form>
 
             <div className="flex-1 overflow-y-auto divide-y divide-line/60">
               {hasilOnline.length === 0 ? (
                 <div className="py-12 text-center text-xs text-ink-muted">
-                  Masukkan kata kunci atau nomor ISBN untuk mengambil data buku secara otomatis.
+                  Masukkan kata kunci judul pelajaran atau nomor ISBN untuk mengambil data buku secara otomatis.
                 </div>
               ) : (
                 hasilOnline.map((item, idx) => (
@@ -688,24 +710,41 @@ export default function AdminBukuPage() {
                         />
                       </div>
                       <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {item.sumber === "kemendikbud_sibi" && (
+                            <span className="inline-block font-mono text-[9px] uppercase tracking-wider bg-group-pelajaran text-white px-2 py-0.5 rounded font-bold shadow-xs">
+                              Kemendikbud SIBI • Kurikulum Merdeka
+                            </span>
+                          )}
+                          {item.sumber === "buku_indonesia" && (
+                            <span className="inline-block font-mono text-[9px] uppercase tracking-wider bg-status-tersedia text-white px-2 py-0.5 rounded font-bold shadow-xs">
+                              Katalog Buku Indonesia
+                            </span>
+                          )}
+                          {item.sumber === "google_books" && (
+                            <span className="inline-block font-mono text-[9px] uppercase tracking-wider bg-paper-sunken text-ink px-1.5 py-0.5 rounded font-medium">
+                              Google Books
+                            </span>
+                          )}
+                          {item.isbn && (
+                            <span className="inline-block font-mono text-[10px] bg-paper-sunken px-2 py-0.5 rounded text-ink font-semibold">
+                              ISBN: {item.isbn}
+                            </span>
+                          )}
+                        </div>
                         <h4 className="font-serif font-bold text-sm text-ink">{item.judul}</h4>
                         <p className="text-xs text-ink-muted">
                           Penulis: {item.penulis} • Penerbit: {item.penerbit} ({item.tahunTerbit || "-"})
                         </p>
-                        {item.isbn && (
-                          <span className="inline-block font-mono text-[10px] bg-paper-sunken px-2 py-0.5 rounded text-ink">
-                            ISBN: {item.isbn}
-                          </span>
-                        )}
                         {item.sinopsis && (
-                          <p className="text-xs text-ink-muted/80 line-clamp-2">{item.sinopsis}</p>
+                          <p className="text-xs text-ink-muted/80 line-clamp-2 leading-relaxed">{item.sinopsis}</p>
                         )}
                       </div>
                     </div>
 
                     <button
                       onClick={() => handlePilihBukuOnline(item)}
-                      className="px-3.5 py-2 rounded-lg bg-group-hiburan text-white text-xs font-semibold inline-flex items-center gap-1.5 hover:brightness-105 shrink-0 min-h-[38px]"
+                      className="px-3.5 py-2 rounded-lg bg-group-hiburan text-white text-xs font-semibold inline-flex items-center gap-1.5 hover:brightness-105 shrink-0 min-h-[38px] shadow-sm"
                     >
                       <Plus className="w-4 h-4 stroke-[2.5]" />
                       <span>Pilih Buku</span>
@@ -1047,8 +1086,22 @@ export default function AdminBukuPage() {
                         Tampilkan Semua Unit
                       </button>
                     )}
+                    <a
+                      href={`/admin/buku/cetak-stiker?bukuId=${detailBukuAktif.id}${
+                        eksemplarCetakTerpilih
+                          ? `&ids=${eksemplarCetakTerpilih.map((e) => e.id).join(",")}`
+                          : ""
+                      }`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-line bg-white hover:bg-paper-sunken text-ink text-xs font-semibold shadow-xs"
+                      title="Buka halaman cetak mandiri tanpa gangguan elemen latar belakang"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Buka Lembar Mandiri</span>
+                    </a>
                     <button
-                      onClick={() => window.print()}
+                      onClick={cetakStikerTerisolasi}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 shadow-sm"
                     >
                       <Printer className="w-4 h-4" />
@@ -1129,7 +1182,7 @@ export default function AdminBukuPage() {
                 <div className="border border-line rounded-xl overflow-hidden">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-paper-sunken/50 border-b border-line font-mono text-ink-muted uppercase">
+                      <tr className="bg-paper-sunken/50 border-b border-line font-sans text-[11px] font-semibold tracking-wider text-ink-muted uppercase">
                         <th className="py-3 px-4">Kode Barcode / QR</th>
                         <th className="py-3 px-4">Status Saat Ini</th>
                         <th className="py-3 px-4">Informasi Peminjam</th>
