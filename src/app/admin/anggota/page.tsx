@@ -2,8 +2,9 @@
 
 /**
  * Bilik Baca - Halaman Manajemen Anggota Perpustakaan
- * Mendukung Pencarian Real-time, Filter Status, Paginasi (25 baris/halaman),
- * Tambah Manual, Edit Anggota, Impor XLSX Dua Langkah, Cetak Kartu QR, dan Sinkronisasi Netri SMS.
+ * Mendukung Pencarian Real-time, Filter Status & Kelas, Paginasi (25 baris/halaman),
+ * Tambah Manual, Edit Anggota, Riwayat Siswa, Cetak Kartu Individual & Cetak Kartu Massal A4 per Kelas,
+ * serta Sinkronisasi Netri SMS Supabase.
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -21,6 +22,12 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
+  Printer,
+  History,
+  BookOpen,
+  Calendar,
+  Clock,
+  Layers,
 } from "lucide-react";
 
 const BARIS_PER_HALAMAN = 25;
@@ -33,6 +40,7 @@ export default function AdminAnggotaPage() {
   const [kataKunci, setKataKunci] = useState("");
   const [filterStatus, setFilterStatus] = useState<"semua" | "aktif" | "nonaktif">("semua");
   const [filterJenis, setFilterJenis] = useState<"semua" | "siswa" | "guru" | "staf">("semua");
+  const [filterKelas, setFilterKelas] = useState<string>("semua");
   const [halaman, setHalaman] = useState(1);
 
   // Modal Tambah Anggota Manual
@@ -53,16 +61,25 @@ export default function AdminAnggotaPage() {
   const [editStatus, setEditStatus] = useState<"aktif" | "nonaktif" | "ditangguhkan">("aktif");
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
+  // Modal Cetak Kartu Tunggal
+  const [modalCetakBuka, setModalCetakBuka] = useState(false);
+  const [selectedAnggota, setSelectedAnggota] = useState<any | null>(null);
+
+  // Modal Cetak Massal A4
+  const [modalCetakMassalBuka, setModalCetakMassalBuka] = useState(false);
+  const [kelasDipilihCetak, setKelasDipilihCetak] = useState<string>("semua");
+
+  // Modal Riwayat Aktivitas Siswa
+  const [modalRiwayatBuka, setModalRiwayatBuka] = useState(false);
+  const [dataRiwayat, setDataRiwayat] = useState<any | null>(null);
+  const [loadingRiwayat, setLoadingRiwayat] = useState(false);
+
   // Modal Impor Excel/CSV
   const [modalImporBuka, setModalImporBuka] = useState(false);
   const [berkasImpor, setBerkasImpor] = useState<File | null>(null);
   const [loadingPratinjau, setLoadingPratinjau] = useState(false);
   const [dataPratinjau, setDataPratinjau] = useState<any | null>(null);
   const [isSavingImpor, setIsSavingImpor] = useState(false);
-
-  // Modal Cetak Kartu
-  const [modalCetakBuka, setModalCetakBuka] = useState(false);
-  const [selectedAnggota, setSelectedAnggota] = useState<any | null>(null);
 
   // State Sinkronisasi Netri SMS (Supabase)
   const [isSyncingNetri, setIsSyncingNetri] = useState(false);
@@ -96,16 +113,28 @@ export default function AdminAnggotaPage() {
     muatData();
   }, []);
 
+  // Ekstrak daftar kelas unik dari database
+  const daftarKelasUnik = useMemo(() => {
+    const setKelas = new Set<string>();
+    for (const m of daftarAnggota) {
+      if (m.kelas && m.kelas.trim()) {
+        setKelas.add(m.kelas.trim());
+      }
+    }
+    return Array.from(setKelas).sort();
+  }, [daftarAnggota]);
+
   // Reset ke halaman 1 setiap kali filter berubah
   useEffect(() => {
     setHalaman(1);
-  }, [kataKunci, filterStatus, filterJenis]);
+  }, [kataKunci, filterStatus, filterJenis, filterKelas]);
 
   // Data anggota yang sudah difilter
   const anggotaTerfilter = useMemo(() => {
     return daftarAnggota.filter((m) => {
       if (filterStatus !== "semua" && m.status !== filterStatus) return false;
       if (filterJenis !== "semua" && m.jenis !== filterJenis) return false;
+      if (filterKelas !== "semua" && (m.kelas || "").trim() !== filterKelas) return false;
       if (kataKunci.trim()) {
         const q = kataKunci.toLowerCase();
         const cocokNama = m.nama?.toLowerCase().includes(q);
@@ -115,13 +144,23 @@ export default function AdminAnggotaPage() {
       }
       return true;
     });
-  }, [daftarAnggota, kataKunci, filterStatus, filterJenis]);
+  }, [daftarAnggota, kataKunci, filterStatus, filterJenis, filterKelas]);
 
   const totalHalaman = Math.max(1, Math.ceil(anggotaTerfilter.length / BARIS_PER_HALAMAN));
   const anggotaHalamanIni = useMemo(() => {
     const mulai = (halaman - 1) * BARIS_PER_HALAMAN;
     return anggotaTerfilter.slice(mulai, mulai + BARIS_PER_HALAMAN);
   }, [anggotaTerfilter, halaman]);
+
+  // Siswa untuk cetak massal A4
+  const anggotaUntukCetakMassal = useMemo(() => {
+    if (kelasDipilihCetak === "semua") {
+      return anggotaTerfilter.filter((m) => m.status === "aktif");
+    }
+    return daftarAnggota.filter(
+      (m) => (m.kelas || "").trim() === kelasDipilihCetak && m.status === "aktif"
+    );
+  }, [daftarAnggota, anggotaTerfilter, kelasDipilihCetak]);
 
   // Simpan Anggota Baru Manual
   const handleSimpanManual = async (e: React.FormEvent) => {
@@ -202,6 +241,27 @@ export default function AdminAnggotaPage() {
       tampilkanToast(err.message, "error");
     } finally {
       setIsSubmittingEdit(false);
+    }
+  };
+
+  // Buka Riwayat Aktivitas Siswa
+  const bukaRiwayatSiswa = async (m: any) => {
+    setLoadingRiwayat(true);
+    setDataRiwayat(null);
+    setModalRiwayatBuka(true);
+
+    try {
+      const res = await fetch(`/api/v1/admin/anggota/${m.id}/riwayat`);
+      const json = await res.json();
+      if (json.sukses) {
+        setDataRiwayat(json.data);
+      } else {
+        tampilkanToast(json.pesan || "Gagal memuat riwayat", "error");
+      }
+    } catch {
+      tampilkanToast("Terjadi kesalahan saat memuat riwayat", "error");
+    } finally {
+      setLoadingRiwayat(false);
     }
   };
 
@@ -319,7 +379,7 @@ export default function AdminAnggotaPage() {
         <div>
           <h1 className="font-serif text-3xl font-semibold text-ink">Data Anggota Siswa & Guru</h1>
           <p className="text-xs text-ink-muted mt-0.5">
-            Kelola master data peminjam perpustakaan, cetak kartu QR anggota, dan sinkronisasi Netri SMS.
+            Kelola master data peminjam perpustakaan, cetak kartu QR massal per kelas, dan sinkronisasi Netri SMS.
           </p>
         </div>
 
@@ -334,6 +394,17 @@ export default function AdminAnggotaPage() {
               className={`w-4 h-4 text-group-pelajaran ${isSyncingNetri ? "animate-bounce" : ""}`}
             />
             <span>{isSyncingNetri ? "Menyinkronkan..." : "Sinkronisasi Netri SMS"}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setKelasDipilihCetak(filterKelas !== "semua" ? filterKelas : "semua");
+              setModalCetakMassalBuka(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold transition-colors min-h-[44px]"
+          >
+            <Printer className="w-4 h-4 text-ink-muted" />
+            <span>Cetak Kartu Massal (A4)</span>
           </button>
 
           <button
@@ -377,9 +448,23 @@ export default function AdminAnggotaPage() {
                 value={kataKunci}
                 onChange={(e) => setKataKunci(e.target.value)}
                 placeholder="Cari NIS, Nama, atau Kelas..."
-                className="pl-8 pr-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[38px] w-64"
+                className="pl-8 pr-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[38px] w-56"
               />
             </div>
+
+            {/* Filter Kelas */}
+            <select
+              value={filterKelas}
+              onChange={(e) => setFilterKelas(e.target.value)}
+              className="px-3 py-1.5 rounded-md border border-line bg-white text-xs min-h-[38px] font-mono"
+            >
+              <option value="semua">Semua Kelas ({daftarKelasUnik.length})</option>
+              {daftarKelasUnik.map((kls) => (
+                <option key={kls} value={kls}>
+                  Kelas {kls}
+                </option>
+              ))}
+            </select>
 
             {/* Filter Jenis */}
             <select
@@ -447,20 +532,30 @@ export default function AdminAnggotaPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-2">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            onClick={() => bukaRiwayatSiswa(m)}
+                            title="Lihat riwayat peminjaman buku dan kunjungan kiosk"
+                            className="p-1.5 rounded border border-line hover:bg-paper-sunken text-ink text-xs inline-flex items-center gap-1"
+                          >
+                            <History className="w-3.5 h-3.5 text-group-pelajaran" />
+                            <span>Riwayat</span>
+                          </button>
+
                           <button
                             onClick={() => bukaModalEdit(m)}
-                            className="px-2.5 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-medium inline-flex items-center gap-1"
+                            className="p-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-medium inline-flex items-center gap-1"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Edit</span>
                           </button>
+
                           <button
                             onClick={() => {
                               setSelectedAnggota(m);
                               setModalCetakBuka(true);
                             }}
-                            className="px-3 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-mono font-semibold inline-flex items-center gap-1.5"
+                            className="px-2.5 py-1.5 rounded border border-line hover:bg-paper-sunken text-xs font-mono font-semibold inline-flex items-center gap-1.5"
                           >
                             <QrCode className="w-3.5 h-3.5" />
                             <span>Kartu QR</span>
@@ -511,7 +606,7 @@ export default function AdminAnggotaPage() {
       {/* MODAL 1: FORM TAMBAH ANGGOTA MANUAL                                      */}
       {/* ========================================================================= */}
       {modalTambahBuka && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="font-serif font-bold text-lg text-ink">Tambah Anggota Manual</h3>
@@ -599,7 +694,7 @@ export default function AdminAnggotaPage() {
       {/* MODAL 1B: FORM EDIT ANGGOTA                                              */}
       {/* ========================================================================= */}
       {modalEditBuka && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="font-serif font-bold text-lg text-ink">Edit Data Anggota</h3>
@@ -697,10 +792,303 @@ export default function AdminAnggotaPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: IMPOR XLSX DUA LANGKAH (PRATINJAU -> COMMIT)                     */}
+      {/* MODAL 2: RIWAYAT AKTIVITAS ANGGOTA (SIRKULASI & PRESENSI KIOSK)           */}
+      {/* ========================================================================= */}
+      {modalRiwayatBuka && (
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in print:hidden">
+          <div className="bg-surface border border-line rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div>
+                <h3 className="font-serif font-bold text-lg text-ink">
+                  Riwayat Aktivitas Perpustakaan
+                </h3>
+                {dataRiwayat && (
+                  <p className="text-xs text-ink-muted mt-0.5">
+                    {dataRiwayat.anggota.nama} • NIS: {dataRiwayat.anggota.nomorInduk} • Kelas: {dataRiwayat.anggota.kelas || "Umum"}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setModalRiwayatBuka(false)}
+                className="p-1 rounded text-ink-muted hover:text-ink"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {loadingRiwayat ? (
+              <div className="py-12 text-center text-xs font-mono text-ink-muted">
+                Memuat riwayat anggota...
+              </div>
+            ) : !dataRiwayat ? (
+              <div className="py-8 text-center text-xs text-danger">
+                Gagal memuat rincian riwayat aktivitas anggota.
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Ringkasan Angka */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-3 rounded-lg bg-status-dipinjam/10 text-status-dipinjam">
+                    <span className="font-mono text-[11px] block">Sedang Dipinjam</span>
+                    <strong className="font-mono text-xl">{dataRiwayat.statistik.totalDipinjam} Buku</strong>
+                  </div>
+                  <div className="p-3 rounded-lg bg-status-tersedia/10 text-status-tersedia">
+                    <span className="font-mono text-[11px] block">Selesai Dikembalikan</span>
+                    <strong className="font-mono text-xl">{dataRiwayat.statistik.totalSelesai} Buku</strong>
+                  </div>
+                  <div className="p-3 rounded-lg bg-paper-sunken text-ink">
+                    <span className="font-mono text-[11px] text-ink-muted block">Presensi Kiosk</span>
+                    <strong className="font-mono text-xl">{dataRiwayat.statistik.totalKunjungan} Kali</strong>
+                  </div>
+                </div>
+
+                {/* Riwayat Peminjaman Buku */}
+                <div className="space-y-2">
+                  <h4 className="font-serif font-bold text-sm text-ink flex items-center gap-1.5">
+                    <BookOpen className="w-4 h-4 text-group-hiburan" />
+                    <span>Daftar Transaksi Peminjaman</span>
+                  </h4>
+
+                  <div className="border border-line rounded-lg overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-paper-sunken/60 font-mono uppercase text-ink-muted border-b border-line">
+                        <tr>
+                          <th className="py-2.5 px-3">Kode</th>
+                          <th className="py-2.5 px-3">Judul Buku</th>
+                          <th className="py-2.5 px-3">Tgl Pinjam</th>
+                          <th className="py-2.5 px-3">Jatuh Tempo</th>
+                          <th className="py-2.5 px-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line/60">
+                        {dataRiwayat.riwayatPinjaman.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-6 text-center text-ink-muted">
+                              Siswa ini belum pernah meminjam buku.
+                            </td>
+                          </tr>
+                        ) : (
+                          dataRiwayat.riwayatPinjaman.map((p: any) => (
+                            <tr key={p.id} className="hover:bg-paper-sunken/20">
+                              <td className="py-2 px-3 font-mono font-bold text-ink">{p.kodeEksemplar}</td>
+                              <td className="py-2 px-3 font-medium text-ink">{p.judulBuku}</td>
+                              <td className="py-2 px-3 font-mono text-ink-muted">
+                                {new Date(p.dipinjamPada).toLocaleDateString("id-ID")}
+                              </td>
+                              <td className="py-2 px-3 font-mono">
+                                {new Date(p.jatuhTempo).toLocaleDateString("id-ID")}
+                              </td>
+                              <td className="py-2 px-3">
+                                {p.isAktif ? (
+                                  p.terlambat ? (
+                                    <span className="px-2 py-0.5 rounded bg-danger/10 text-danger font-mono font-bold text-[10px]">
+                                      Terlambat {p.selisihHari} hr
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded bg-status-dipinjam/10 text-status-dipinjam font-mono font-bold text-[10px]">
+                                      Aktif Dipinjam
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded bg-status-tersedia/10 text-status-tersedia font-mono text-[10px]">
+                                    Dikembalikan
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Riwayat Presensi Kiosk */}
+                <div className="space-y-2">
+                  <h4 className="font-serif font-bold text-sm text-ink flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-status-tersedia" />
+                    <span>Presensi Kunjungan Kiosk Terakhir</span>
+                  </h4>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
+                    {dataRiwayat.riwayatKunjungan.length === 0 ? (
+                      <p className="col-span-4 text-center py-3 text-ink-muted">
+                        Belum ada catatan presensi kunjungan kiosk.
+                      </p>
+                    ) : (
+                      dataRiwayat.riwayatKunjungan.map((k: any) => (
+                        <div key={k.id} className="p-2.5 rounded-lg border border-line bg-paper-sunken/40">
+                          <span className="text-ink font-semibold block">{k.tanggal}</span>
+                          <span className="text-[11px] text-ink-muted block">
+                            Pukul {new Date(k.waktu).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-line flex justify-end">
+              <button
+                onClick={() => setModalRiwayatBuka(false)}
+                className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: CETAK KARTU TUNGGAL                                             */}
+      {/* ========================================================================= */}
+      {modalCetakBuka && selectedAnggota && (
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:bg-white print:p-0">
+          <div className="bg-surface border border-line rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center print:border-none print:shadow-none print:p-0">
+            <div className="flex items-center justify-between border-b border-line pb-3 print:hidden">
+              <h3 className="font-serif font-bold text-base text-ink">Kartu Anggota Perpustakaan</h3>
+              <button
+                onClick={() => setModalCetakBuka(false)}
+                className="p-1 rounded text-ink-muted hover:text-ink"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Kartu Fisik Preview */}
+            <div className="border border-line rounded-xl p-6 bg-paper shadow-sm flex flex-col items-center space-y-3 print:border print:border-black print:rounded-none">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded bg-ink text-paper flex items-center justify-center font-serif font-bold text-sm">
+                  B
+                </div>
+                <span className="font-serif font-bold text-base text-ink">Bilik Baca</span>
+              </div>
+
+              {/* QR Image dari API */}
+              <div className="p-2 bg-white rounded-lg border border-line">
+                <img
+                  src={`/api/v1/admin/qr?tipe=anggota&id=${selectedAnggota.id}`}
+                  alt="QR Kartu Siswa"
+                  className="w-40 h-40 object-contain"
+                />
+              </div>
+
+              <div>
+                <h4 className="font-serif font-bold text-base text-ink">{selectedAnggota.nama}</h4>
+                <p className="font-mono text-xs text-ink-muted mt-0.5">
+                  NIS: {selectedAnggota.nomorInduk} • Kelas: {selectedAnggota.kelas || "Umum"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => window.print()}
+              className="w-full py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 print:hidden"
+            >
+              Cetak Kartu Sekarang
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: CETAK KARTU MASSAL A4 PER KELAS                                 */}
+      {/* ========================================================================= */}
+      {modalCetakMassalBuka && (
+        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 print:p-0 print:bg-white animate-fade-in">
+          <div className="bg-surface border border-line rounded-2xl max-w-4xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden print:border-none print:shadow-none print:h-auto print:max-w-none print:w-full">
+            {/* Header Dialog (Tersembunyi Saat Dicetak) */}
+            <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-surface shrink-0 print:hidden">
+              <div className="flex items-center gap-3">
+                <Printer className="w-5 h-5 text-ink-muted" />
+                <div>
+                  <h3 className="font-serif font-bold text-base text-ink">
+                    Cetak Kartu Anggota Massal (Format Kertas A4)
+                  </h3>
+                  <p className="text-xs text-ink-muted">
+                    Total {anggotaUntukCetakMassal.length} siswa siap dicetak dalam kisi kartu siap potong.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Pilihan Kelas untuk Dicetak */}
+                <select
+                  value={kelasDipilihCetak}
+                  onChange={(e) => setKelasDipilihCetak(e.target.value)}
+                  className="px-3 py-1.5 rounded-md border border-line bg-white text-xs font-mono min-h-[38px]"
+                >
+                  <option value="semua">Semua Siswa Terfilter ({anggotaUntukCetakMassal.length})</option>
+                  {daftarKelasUnik.map((kls) => (
+                    <option key={kls} value={kls}>
+                      Khusus Kelas {kls}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => window.print()}
+                  className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Cetak Dokumen A4</span>
+                </button>
+
+                <button
+                  onClick={() => setModalCetakMassalBuka(false)}
+                  className="p-1 rounded text-ink-muted hover:text-ink"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Area Lembar Cetak A4 */}
+            <div className="flex-1 p-6 overflow-y-auto bg-paper print:bg-white print:p-0">
+              <div className="grid grid-cols-2 gap-4 max-w-[800px] mx-auto print:max-w-none print:grid-cols-2 print:gap-3">
+                {anggotaUntukCetakMassal.map((m) => (
+                  <div
+                    key={m.id}
+                    className="border-2 border-dashed border-line rounded-lg p-4 bg-white flex items-center gap-3.5 print:border-black print:rounded-none break-inside-avoid shadow-xs"
+                  >
+                    <div className="p-1 bg-white border border-line rounded shrink-0 print:border-black">
+                      <img
+                        src={`/api/v1/admin/qr?tipe=anggota&id=${m.id}`}
+                        alt={`QR ${m.nama}`}
+                        className="w-24 h-24 object-contain"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center gap-1.5 border-b border-line/60 pb-1">
+                        <div className="w-4 h-4 rounded bg-ink text-paper flex items-center justify-center font-serif font-bold text-[9px]">
+                          B
+                        </div>
+                        <span className="font-serif font-bold text-xs text-ink">Bilik Baca</span>
+                      </div>
+                      <h4 className="font-serif font-bold text-sm text-ink truncate leading-tight">
+                        {m.nama}
+                      </h4>
+                      <p className="font-mono text-[11px] text-ink-muted">NIS: {m.nomorInduk}</p>
+                      <p className="font-mono text-[11px] font-semibold text-ink">
+                        Kelas: {m.kelas || "Umum"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: IMPOR XLSX DUA LANGKAH (PRATINJAU -> COMMIT)                     */}
       {/* ========================================================================= */}
       {modalImporBuka && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
@@ -805,62 +1193,10 @@ export default function AdminAnggotaPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: CETAK KARTU ANGGOTA BER-QR                                      */}
-      {/* ========================================================================= */}
-      {modalCetakBuka && selectedAnggota && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-surface border border-line rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
-            <div className="flex items-center justify-between border-b border-line pb-3 print:hidden">
-              <h3 className="font-serif font-bold text-base text-ink">Kartu Anggota Perpustakaan</h3>
-              <button
-                onClick={() => setModalCetakBuka(false)}
-                className="p-1 rounded text-ink-muted hover:text-ink"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Kartu Fisik Preview */}
-            <div className="border border-line rounded-xl p-6 bg-paper shadow-sm flex flex-col items-center space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded bg-ink text-paper flex items-center justify-center font-serif font-bold text-sm">
-                  B
-                </div>
-                <span className="font-serif font-bold text-base text-ink">Bilik Baca</span>
-              </div>
-
-              {/* QR Image dari API */}
-              <div className="p-2 bg-white rounded-lg border border-line">
-                <img
-                  src={`/api/v1/admin/qr?tipe=anggota&id=${selectedAnggota.id}`}
-                  alt="QR Kartu Siswa"
-                  className="w-40 h-40 object-contain"
-                />
-              </div>
-
-              <div>
-                <h4 className="font-serif font-bold text-base text-ink">{selectedAnggota.nama}</h4>
-                <p className="font-mono text-xs text-ink-muted mt-0.5">
-                  NIS: {selectedAnggota.nomorInduk} • Kelas: {selectedAnggota.kelas || "Umum"}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => window.print()}
-              className="w-full py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 print:hidden"
-            >
-              Cetak Kartu Sekarang
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL 4: LAPORAN HASIL SINKRONISASI NETRI SMS                             */}
+      {/* MODAL 6: LAPORAN HASIL SINKRONISASI NETRI SMS                             */}
       {/* ========================================================================= */}
       {hasilSyncModal && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:hidden">
           <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 text-center">
             <div className="w-12 h-12 rounded-full bg-status-tersedia/10 text-status-tersedia flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-7 h-7" />

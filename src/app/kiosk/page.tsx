@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { QrCode, CheckCircle2, AlertCircle, Clock, Send, UserCheck, Sparkles } from "lucide-react";
+import { QrCode, CheckCircle2, AlertCircle, Clock, Send, UserCheck, Sparkles, Camera, CameraOff } from "lucide-react";
+import { QrCameraScanner } from "@/components/ui/QrCameraScanner";
 
 interface KunjunganItem {
   id: string;
@@ -32,6 +33,7 @@ export default function KioskPage() {
 
   // Riwayat 5 Kedatangan Terakhir di Monitor PC Kiosk
   const [riwayat, setRiwayat] = useState<KunjunganItem[]>([]);
+  const [kameraAktif, setKameraAktif] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -85,10 +87,9 @@ export default function KioskPage() {
     }
   }, [suksesState.aktif]);
 
-  // Handler Submit Presensi (Kamera QR atau Scanner Barcode USB)
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!nomorInduk.trim() || isSubmitting) return;
+  // Handler Catat Presensi Siswa (Dapat dipanggil dari Scanner Barcode USB atau Kamera)
+  const prosesCatatPresensi = async (inputStr: string) => {
+    if (!inputStr.trim() || isSubmitting) return;
 
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -97,7 +98,7 @@ export default function KioskPage() {
       const res = await fetch("/api/v1/absensi/catat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: nomorInduk.trim() }),
+        body: JSON.stringify({ input: inputStr.trim() }),
       });
 
       const json = await res.json();
@@ -135,6 +136,11 @@ export default function KioskPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    await prosesCatatPresensi(nomorInduk);
   };
 
   return (
@@ -187,21 +193,59 @@ export default function KioskPage() {
             </div>
           </div>
 
-          {/* Bingkai Pemindai Kartu QR (Viewfinder Layar Komputer) */}
-          <div className="relative border-2 border-dashed border-ink/30 rounded-xl p-8 bg-paper/60 flex flex-col items-center justify-center text-center overflow-hidden min-h-[220px]">
-            <QrCode className="w-20 h-20 text-ink/40 stroke-1 mb-3" />
-            <span className="font-serif font-semibold text-lg text-ink">
-              Arahkan Kartu QR Siswa ke Kamera
-            </span>
-            <span className="font-mono text-xs text-ink-muted mt-1">
-              atau gunakan pemindai barcode USB
-            </span>
+          {/* Bingkai Pemindai Kartu QR (Viewfinder / Kamera Webcam Live) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs uppercase tracking-wider text-ink-muted font-semibold">
+                Pemindai Kartu Anggota:
+              </span>
+              <button
+                type="button"
+                onClick={() => setKameraAktif(!kameraAktif)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
+                  kameraAktif
+                    ? "bg-danger text-white hover:bg-danger/90"
+                    : "bg-ink text-paper hover:bg-ink/90"
+                }`}
+              >
+                {kameraAktif ? (
+                  <>
+                    <CameraOff className="w-3.5 h-3.5" />
+                    <span>Matikan Kamera</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Buka Kamera Webcam</span>
+                  </>
+                )}
+              </button>
+            </div>
 
-            {/* Garis Laser Animasi Pemindai */}
-            <div
-              className="absolute left-6 right-6 h-0.5 bg-group-hiburan shadow-[0_0_12px_rgba(184,56,26,1)] animate-pulse top-1/2 -translate-y-1/2"
-              aria-hidden="true"
-            />
+            {kameraAktif ? (
+              <QrCameraScanner
+                label="Dekatkan Kartu QR Siswa ke Lensa Kamera"
+                autoStopOnScan={false}
+                onScan={(hasil) => prosesCatatPresensi(hasil)}
+                onClose={() => setKameraAktif(false)}
+              />
+            ) : (
+              <div className="relative border-2 border-dashed border-ink/30 rounded-xl p-8 bg-paper/60 flex flex-col items-center justify-center text-center overflow-hidden min-h-[220px]">
+                <QrCode className="w-16 h-16 text-ink/40 stroke-1 mb-3" />
+                <span className="font-serif font-semibold text-lg text-ink">
+                  Arahkan Kartu QR Siswa ke Pemindai USB
+                </span>
+                <span className="font-mono text-xs text-ink-muted mt-1">
+                  atau klik tombol &ldquo;Buka Kamera Webcam&rdquo; di atas
+                </span>
+
+                {/* Garis Laser Animasi Pemindai */}
+                <div
+                  className="absolute left-6 right-6 h-0.5 bg-group-hiburan shadow-[0_0_12px_rgba(184,56,26,1)] animate-pulse top-1/2 -translate-y-1/2"
+                  aria-hidden="true"
+                />
+              </div>
+            )}
           </div>
 
           {/* Form Input Manual NIS / NIP (Mendukung Scanner USB Keyboard Wedge) */}

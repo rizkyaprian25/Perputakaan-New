@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { BookOpen, Search, QrCode, Shield, Clock } from "lucide-react";
+import { Suspense } from "react";
+import { BookOpen, QrCode, Shield, Clock } from "lucide-react";
+import { GlobalSearchBar } from "@/components/ui/GlobalSearchBar";
 
 export default function KatalogLayout({
   children,
@@ -28,14 +30,9 @@ export default function KatalogLayout({
 
           {/* Kotak Pencarian Global Desktop */}
           <div className="flex-1 max-w-xl">
-            <div className="relative">
-              <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Cari judul buku, nama penulis, atau nomor ISBN..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-line bg-surface text-sm text-ink placeholder:text-ink-muted/70 focus:border-ink focus:ring-1 focus:ring-ink transition-all"
-              />
-            </div>
+            <Suspense fallback={<div className="h-10 w-full rounded-lg bg-surface/50 border border-line animate-pulse" />}>
+              <GlobalSearchBar />
+            </Suspense>
           </div>
 
           {/* Menu Navigasi Desktop */}

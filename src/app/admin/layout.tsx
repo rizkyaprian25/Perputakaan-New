@@ -13,6 +13,7 @@ import {
   BookOpen,
   Monitor,
   Loader2,
+  FileText,
 } from "lucide-react";
 
 export default function AdminLayout({
@@ -155,6 +156,18 @@ export default function AdminLayout({
             >
               <Users className="w-4 h-4 text-ink-muted" />
               <span>Data Anggota Siswa</span>
+            </Link>
+
+            <Link
+              href="/admin/laporan"
+              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
+                pathname.startsWith("/admin/laporan")
+                  ? "bg-paper-sunken text-ink font-semibold"
+                  : "text-ink hover:bg-paper-sunken"
+              }`}
+            >
+              <FileText className="w-4 h-4 text-ink-muted" />
+              <span>Pusat Laporan & Rekap</span>
             </Link>
 
             <Link

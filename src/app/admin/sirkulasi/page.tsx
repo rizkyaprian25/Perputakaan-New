@@ -19,7 +19,9 @@ import {
   Printer,
   Clock,
   RotateCcw,
+  Camera,
 } from "lucide-react";
+import { QrCameraScanner } from "@/components/ui/QrCameraScanner";
 
 interface AnggotaAktif {
   id: string;
@@ -98,6 +100,9 @@ export default function SirkulasiWorkstationPage() {
   const [filterAktif, setFilterAktif] = useState<"semua" | "terlambat">("semua");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  // Modal Kamera Live Scanner
+  const [modalKamera, setModalKamera] = useState<"anggota" | "buku" | "kembali" | null>(null);
+
   // Notifikasi Toast
   const [notif, setNotif] = useState<{ tipe: "sukses" | "error"; pesan: string } | null>(null);
 
@@ -143,16 +148,16 @@ export default function SirkulasiWorkstationPage() {
   }, [tabAktif, anggotaPeminjam]);
 
   // 1. Cari Anggota (Scan Kartu QR atau Ketik NIS)
-  const handleCariAnggota = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!inputAnggota.trim() || loadingAnggota) return;
+  const prosesCariAnggota = async (kodeOrNis: string) => {
+    const queryBersih = kodeOrNis.trim();
+    if (!queryBersih || loadingAnggota) return;
 
     setLoadingAnggota(true);
     setNotif(null);
 
     try {
       const res = await fetch(
-        `/api/v1/admin/sirkulasi/anggota?q=${encodeURIComponent(inputAnggota.trim())}`
+        `/api/v1/admin/sirkulasi/anggota?q=${encodeURIComponent(queryBersih)}`
       );
       const json = await res.json();
 
@@ -171,10 +176,15 @@ export default function SirkulasiWorkstationPage() {
     }
   };
 
-  // 2. Scan Eksemplar Buku ke Keranjang
-  const handleTambahBuku = async (e?: React.FormEvent) => {
+  const handleCariAnggota = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputBuku.trim() || loadingBuku) return;
+    await prosesCariAnggota(inputAnggota);
+  };
+
+  // 2. Scan Eksemplar Buku ke Keranjang
+  const prosesTambahBuku = async (kodeBuku: string) => {
+    const kodeBersih = kodeBuku.trim();
+    if (!kodeBersih || loadingBuku) return;
 
     if (!anggotaPeminjam) {
       tampilkanNotif("Scan atau pilih kartu siswa peminjam terlebih dahulu!", "error");
@@ -186,7 +196,6 @@ export default function SirkulasiWorkstationPage() {
       return;
     }
 
-    const kodeBersih = inputBuku.trim();
     if (keranjangBuku.some((b) => b.kode.toLowerCase() === kodeBersih.toLowerCase())) {
       tampilkanNotif("Buku ini sudah ada di dalam keranjang!", "error");
       setInputBuku("");
@@ -218,6 +227,11 @@ export default function SirkulasiWorkstationPage() {
     } finally {
       setLoadingBuku(false);
     }
+  };
+
+  const handleTambahBuku = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    await prosesTambahBuku(inputBuku);
   };
 
   // 3. Konfirmasi Transaksi Peminjaman Atomik
@@ -473,6 +487,14 @@ export default function SirkulasiWorkstationPage() {
                       disabled={loadingAnggota}
                     />
                     <button
+                      type="button"
+                      onClick={() => setModalKamera("anggota")}
+                      title="Buka Scanner Kamera Webcam"
+                      className="px-3 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[44px]"
+                    >
+                      <Camera className="w-4 h-4 text-group-hiburan" />
+                    </button>
+                    <button
                       type="submit"
                       disabled={loadingAnggota || !inputAnggota.trim()}
                       className="px-4 py-2.5 rounded-md bg-ink text-paper text-xs font-semibold min-h-[44px] hover:bg-ink/90 disabled:opacity-50"
@@ -547,6 +569,15 @@ export default function SirkulasiWorkstationPage() {
                   disabled={!anggotaPeminjam || loadingBuku}
                   className="flex-1 px-4 py-2.5 rounded-md border border-line bg-white font-mono text-sm focus:border-ink min-h-[44px] disabled:bg-paper-sunken/40"
                 />
+                <button
+                  type="button"
+                  disabled={!anggotaPeminjam}
+                  onClick={() => setModalKamera("buku")}
+                  title="Scan Buku Lewat Kamera Webcam"
+                  className="px-3 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[44px] disabled:opacity-50"
+                >
+                  <Camera className="w-4 h-4 text-group-pelajaran" />
+                </button>
                 <button
                   type="submit"
                   disabled={!anggotaPeminjam || loadingBuku || !inputBuku.trim()}
@@ -650,6 +681,14 @@ export default function SirkulasiWorkstationPage() {
                   className="flex-1 px-4 py-3 rounded-md border border-line bg-white font-mono text-sm focus:border-ink min-h-[44px]"
                   disabled={loadingKembali}
                 />
+                <button
+                  type="button"
+                  onClick={() => setModalKamera("kembali")}
+                  title="Scan Pengembalian Lewat Kamera"
+                  className="px-3 py-3 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[44px]"
+                >
+                  <Camera className="w-4 h-4 text-ink-muted" />
+                </button>
                 <button
                   type="submit"
                   disabled={loadingKembali || !inputKembali.trim()}
@@ -962,6 +1001,55 @@ export default function SirkulasiWorkstationPage() {
                 Selesai
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL PEMINDAI KAMERA WEBCAM LIVE                                        */}
+      {/* ========================================================================= */}
+      {modalKamera && (
+        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-surface border border-line rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div>
+                <h3 className="font-serif font-bold text-base text-ink">
+                  {modalKamera === "anggota"
+                    ? "Scan Kartu QR Siswa / Peminjam"
+                    : modalKamera === "buku"
+                    ? "Scan Label QR / Barcode Eksemplar Buku"
+                    : "Scan Buku Pengembalian"}
+                </h3>
+                <p className="text-xs text-ink-muted">
+                  Arahkan barcode atau kartu QR tepat ke kotak pemindai kamera
+                </p>
+              </div>
+              <button
+                onClick={() => setModalKamera(null)}
+                className="p-1 rounded text-ink-muted hover:text-ink"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <QrCameraScanner
+              label={
+                modalKamera === "anggota"
+                  ? "Posisikan Kartu Siswa di Depan Lensa"
+                  : "Posisikan Stiker QR / Barcode Buku di Depan Lensa"
+              }
+              onScan={(kode) => {
+                if (modalKamera === "anggota") {
+                  prosesCariAnggota(kode);
+                } else if (modalKamera === "buku") {
+                  prosesTambahBuku(kode);
+                } else if (modalKamera === "kembali") {
+                  prosesKembalikanKode(kode);
+                }
+                setModalKamera(null);
+              }}
+              onClose={() => setModalKamera(null)}
+            />
           </div>
         </div>
       )}
