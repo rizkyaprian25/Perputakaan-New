@@ -163,68 +163,70 @@ export default async function KatalogBerandaPage({ searchParams }: KatalogBerand
       ) : (
         /* 2. Hero Desktop Widescreen: Dua Pintu Masuk Berdampingan */
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Panel Kiri: Hiburan (Jingga-Bata #B8381A) */}
+          {/* Panel Kiri: Hiburan (Warm Terracotta / Ember) */}
           <Link
             href="/katalog/hiburan"
-            className="group relative bg-group-hiburan text-on-group rounded-xl p-10 flex flex-col justify-between min-h-[300px] shadow-sm hover:shadow-md hover:brightness-105 transition-all overflow-hidden"
+            className="group relative bg-gradient-to-br from-group-hiburan via-[#ba3c08] to-[#8f2703] text-on-group rounded-2xl p-10 flex flex-col justify-between min-h-[310px] shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 overflow-hidden border border-white/15"
           >
             <div className="space-y-3 z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-mono backdrop-blur-sm">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Kelompok Koleksi 1</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-mono backdrop-blur-sm border border-white/25">
+                <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                <span className="font-semibold tracking-wide">Kelompok Koleksi 1</span>
               </div>
-              <h2 className="font-serif text-5xl font-semibold tracking-tight text-white leading-none">
+              <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight text-white leading-none">
                 Bacaan Hiburan
               </h2>
-              <p className="text-white/85 text-base max-w-md leading-relaxed pt-2">
+              <p className="text-white/90 text-sm sm:text-base max-w-md leading-relaxed pt-2">
                 Koleksi novel sastra, kumpulan cerpen, komik grafis, biografi tokoh, dan ensiklopedia sains populer.
               </p>
             </div>
 
-            <div className="flex items-center justify-between pt-8 border-t border-white/25 z-10">
-              <span className="font-mono text-sm tracking-widest uppercase text-white/90">
-                {jumlahHiburan} Judul Buku Tersedia
+            <div className="flex items-center justify-between pt-8 border-t border-white/20 z-10">
+              <span className="font-mono text-xs sm:text-sm tracking-wider uppercase text-white/90 font-medium tabular-nums">
+                <strong className="text-white font-bold">{jumlahHiburan}</strong> Judul Buku Tersedia
               </span>
-              <span className="inline-flex items-center gap-2 text-base font-semibold group-hover:translate-x-2 transition-transform">
-                Buka Katalog <ArrowRight className="w-5 h-5" />
+              <span className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold group-hover:translate-x-2 transition-transform bg-white/15 px-4 py-2 rounded-xl backdrop-blur-xs">
+                Buka Katalog <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
             </div>
 
+            {/* Aksen visual halus */}
             <div
-              className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"
+              className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"
               aria-hidden="true"
             />
           </Link>
 
-          {/* Panel Kanan: Pelajaran (Biru Tinta #1F3FA8) */}
+          {/* Panel Kanan: Pelajaran (Royal Blue / Oxford Sapphire) */}
           <Link
             href="/katalog/pelajaran"
-            className="group relative bg-group-pelajaran text-on-group rounded-xl p-10 flex flex-col justify-between min-h-[300px] shadow-sm hover:shadow-md hover:brightness-105 transition-all overflow-hidden"
+            className="group relative bg-gradient-to-br from-group-pelajaran via-[#1b43be] to-[#122e83] text-on-group rounded-2xl p-10 flex flex-col justify-between min-h-[310px] shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 overflow-hidden border border-white/15"
           >
             <div className="space-y-3 z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-mono backdrop-blur-sm">
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>Kelompok Koleksi 2</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-xs font-mono backdrop-blur-sm border border-white/25">
+                <GraduationCap className="w-3.5 h-3.5 text-blue-200" />
+                <span className="font-semibold tracking-wide">Kelompok Koleksi 2</span>
               </div>
-              <h2 className="font-serif text-5xl font-semibold tracking-tight text-white leading-none">
+              <h2 className="font-serif text-4xl sm:text-5xl font-bold tracking-tight text-white leading-none">
                 Buku Pelajaran
               </h2>
-              <p className="text-white/85 text-base max-w-md leading-relaxed pt-2">
+              <p className="text-white/90 text-sm sm:text-base max-w-md leading-relaxed pt-2">
                 Buku teks kurikulum merdeka, modul pelajaran, dan materi persiapan ujian per tingkat kelas.
               </p>
             </div>
 
-            <div className="flex items-center justify-between pt-8 border-t border-white/25 z-10">
-              <span className="font-mono text-sm tracking-widest uppercase text-white/90">
-                {jumlahPelajaran} Judul Buku Tersedia
+            <div className="flex items-center justify-between pt-8 border-t border-white/20 z-10">
+              <span className="font-mono text-xs sm:text-sm tracking-wider uppercase text-white/90 font-medium tabular-nums">
+                <strong className="text-white font-bold">{jumlahPelajaran}</strong> Judul Buku Tersedia
               </span>
-              <span className="inline-flex items-center gap-2 text-base font-semibold group-hover:translate-x-2 transition-transform">
-                Buka Katalog <ArrowRight className="w-5 h-5" />
+              <span className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold group-hover:translate-x-2 transition-transform bg-white/15 px-4 py-2 rounded-xl backdrop-blur-xs">
+                Buka Katalog <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
             </div>
 
+            {/* Aksen visual halus */}
             <div
-              className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-white/5 pointer-events-none"
+              className="absolute -right-10 -bottom-10 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none"
               aria-hidden="true"
             />
           </Link>

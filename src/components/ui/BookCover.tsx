@@ -2,7 +2,7 @@
  * Komponen Sampul Buku (Rasio 2:3)
  * Mencegah layout shift (CLS < 0.1).
  * Jika gambar tidak tersedia, merender blok warna kelompok (Hiburan vs Pelajaran)
- * dengan judul bertipografi Fraunces serif putih (on-group) dan nama penulis di bawah.
+ * dengan judul bertipografi Newsreader serif putih dan nama penulis di bawah.
  */
 
 import { cn } from "@/lib/utils";
@@ -29,27 +29,33 @@ export function BookCover({
   return (
     <div
       className={cn(
-        "relative aspect-[2/3] w-full rounded-md overflow-hidden border border-line flex flex-col justify-between p-4 shadow-sm select-none",
-        isPelajaran ? "bg-group-pelajaran text-on-group" : "bg-group-hiburan text-on-group",
+        "relative aspect-[2/3] w-full rounded-md overflow-hidden border border-line flex flex-col justify-between p-4 select-none book-spine-effect transition-all duration-200",
+        isPelajaran
+          ? "bg-gradient-to-br from-group-pelajaran to-[#14328c] text-on-group"
+          : "bg-gradient-to-br from-group-hiburan to-[#942a04] text-on-group",
         className
       )}
     >
       {/* Lapisan Dasar: Sampul Pengganti Bertipografi Editorial (Khas Bilik Baca) */}
-      <div className="flex flex-col gap-1 z-10">
-        <span className="font-mono text-[10px] tracking-widest uppercase opacity-80">
+      <div className="flex flex-col gap-1.5 z-10">
+        <span className="font-mono text-[9px] tracking-widest uppercase opacity-85 px-1.5 py-0.5 rounded bg-black/20 w-fit">
           {isPelajaran ? "Buku Pelajaran" : "Buku Bacaan"}
         </span>
-        <h3 className="font-serif font-semibold text-base sm:text-lg leading-tight line-clamp-3">
+        <h3 className="font-serif font-medium text-base sm:text-lg leading-tight line-clamp-3 tracking-normal">
           {judul}
         </h3>
       </div>
-      <p className="font-sans text-xs opacity-90 line-clamp-2 z-10 font-normal">
+      <p className="font-sans text-xs opacity-90 line-clamp-2 z-10 font-normal tracking-wide">
         {penulis}
       </p>
 
-      {/* Pola Halus Punggung Buku Tekstur Kertas */}
+      {/* Efek Punggung Buku Realistis (Spine Shadow & Highlight di Sisi Kiri) */}
       <div
-        className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 pointer-events-none"
+        className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/35 via-black/15 to-transparent pointer-events-none z-30"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-y-0 left-3 w-px bg-white/15 pointer-events-none z-30"
         aria-hidden="true"
       />
 

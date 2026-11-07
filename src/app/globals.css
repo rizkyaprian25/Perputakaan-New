@@ -3,41 +3,67 @@
 @tailwind utilities;
 
 :root {
-  /* Token Warna Bilik Baca (Mode Terang) */
-  --color-paper: #F5F0E6;
-  --color-paper-sunken: #EBE4D5;
-  --color-surface: #FFFDF8;
-  --color-line: #D6CDB9;
-  --color-ink: #1C1A17;
-  --color-ink-muted: #5A554B;
-  --color-group-hiburan: #B8381A;
-  --color-group-pelajaran: #1F3FA8;
-  --color-status-tersedia: #2F6B3A;
-  --color-status-dipinjam: #8A5A00;
-  --color-danger: #A3201B;
+  /* Token Warna Bilik Baca (Modern Crisp Library) */
+  --color-paper: #FBF9F5;
+  --color-paper-sunken: #F2ECE1;
+  --color-surface: #FFFFFF;
+  --color-line: #E6E0D4;
+  --color-ink: #141312;
+  --color-ink-muted: #59534B;
+  --color-group-hiburan: #C2410C;
+  --color-group-pelajaran: #1D4ED8;
+  --color-status-tersedia: #15803D;
+  --color-status-dipinjam: #B45309;
+  --color-danger: #B91C1C;
   --color-on-group: #FFFFFF;
 
   /* Jarak & Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
 }
 
 @layer base {
   body {
     background-color: var(--color-paper);
     color: var(--color-ink);
-    font-family: var(--font-ibm-plex-sans), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-plus-jakarta-sans), system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Kepatuhan Aksesibilitas: Cincin fokus tidak boleh hilang */
+  /* Kepatuhan Aksesibilitas: Cincin fokus yang jelas dan berwibawa */
   *:focus-visible {
     outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
+}
+
+/* Utilitas Estetika Sampul Buku & Kartu Realistis */
+.book-spine-effect {
+  box-shadow: 
+    inset 4px 0 6px -2px rgba(0, 0, 0, 0.25),
+    inset -2px 0 4px -1px rgba(0, 0, 0, 0.1),
+    0 4px 12px -2px rgba(20, 19, 18, 0.08),
+    0 2px 4px -1px rgba(20, 19, 18, 0.04);
+}
+
+.book-spine-highlight {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.05) 4%,
+    rgba(0, 0, 0, 0.14) 7%,
+    transparent 12%
+  );
+}
+
+/* Halus untuk pergerakan angka jam & kode */
+.tabular-numbers {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Animasi & Transisi Lembut */

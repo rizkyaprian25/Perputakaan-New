@@ -111,12 +111,12 @@ export default async function KatalogKelompokPage({
   }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       {/* Header Halaman Kelompok */}
       <div className="border-b border-line pb-6">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink mb-3"
+          className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink mb-3 font-medium transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Kembali ke Beranda</span>
@@ -124,20 +124,20 @@ export default async function KatalogKelompokPage({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <span
-              className={`inline-block font-mono text-xs uppercase px-2.5 py-0.5 rounded text-white font-medium mb-2 ${
+              className={`inline-block font-mono text-xs uppercase px-2.5 py-0.5 rounded-full text-white font-semibold mb-2 shadow-xs ${
                 isPelajaran ? "bg-group-pelajaran" : "bg-group-hiburan"
               }`}
             >
               Kelompok {kelompok}
             </span>
-            <h1 className="font-serif text-3xl md:text-4xl font-semibold text-ink">
+            <h1 className="font-serif text-3xl md:text-4xl font-bold text-ink tracking-tight">
               {namaKelompok}
             </h1>
-            <p className="text-ink-muted text-sm mt-1 max-w-xl">{deskripsiKelompok}</p>
+            <p className="text-ink-muted text-sm mt-1 max-w-xl leading-relaxed">{deskripsiKelompok}</p>
           </div>
 
-          <div className="font-mono text-xs text-ink-muted">
-            Menampilkan <strong className="text-ink font-semibold">{daftarBuku.length}</strong> judul
+          <div className="font-mono text-xs text-ink-muted tabular-nums">
+            Menampilkan <strong className="text-ink font-semibold">{daftarBuku.length}</strong> judul buku
           </div>
         </div>
       </div>
@@ -146,10 +146,10 @@ export default async function KatalogKelompokPage({
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         <Link
           href={`/katalog/${kelompok}`}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-medium shrink-0 transition-colors ${
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-colors shadow-xs ${
             !kategoriSlug
               ? "bg-ink text-paper"
-              : "bg-surface border border-line text-ink-muted hover:bg-paper-sunken"
+              : "bg-surface border border-line text-ink-muted hover:text-ink hover:bg-paper-sunken/60"
           }`}
         >
           Semua Kategori
@@ -158,15 +158,15 @@ export default async function KatalogKelompokPage({
           <Link
             key={kat.id}
             href={`/katalog/${kelompok}?kategori=${kat.slug}`}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-medium shrink-0 transition-colors ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-colors shadow-xs ${
               kategoriSlug === kat.slug
                 ? isPelajaran
                   ? "bg-group-pelajaran text-white"
                   : "bg-group-hiburan text-white"
-                : "bg-surface border border-line text-ink-muted hover:bg-paper-sunken"
+                : "bg-surface border border-line text-ink-muted hover:text-ink hover:bg-paper-sunken/60"
             }`}
           >
-            {kat.nama} ({Number(kat.jumlah || 0)})
+            {kat.nama} <span className="opacity-75 tabular-nums">({Number(kat.jumlah || 0)})</span>
           </Link>
         ))}
       </div>

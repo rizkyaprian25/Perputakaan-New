@@ -1,24 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Newsreader, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
+// Tipografi Editorial Literasi: Newsreader (Variable Serif Font)
+const newsreader = Newsreader({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  variable: "--font-newsreader",
   display: "swap",
 });
 
-const ibmPlexSans = IBM_Plex_Sans({
+// Tipografi Antarmuka Modern: Plus Jakarta Sans (Variable Sans-Serif Font)
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-ibm-plex-sans",
+  variable: "--font-plus-jakarta-sans",
   display: "swap",
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
+// Tipografi Monospace & Tabular: JetBrains Mono (Variable Monospace Font)
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-ibm-plex-mono",
+  variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
@@ -35,7 +36,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#F5F0E6",
+  themeColor: "#FBF9F5",
 };
 
 export default function RootLayout({
@@ -46,9 +47,11 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${fraunces.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+      className={`${newsreader.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="antialiased selection:bg-ink selection:text-paper">{children}</body>
+      <body className="antialiased selection:bg-ink selection:text-paper font-sans">
+        {children}
+      </body>
     </html>
   );
 }

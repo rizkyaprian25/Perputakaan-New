@@ -43,9 +43,7 @@ export default function AdminLayout({
       try {
         const res = await fetch("/api/v1/auth/me");
         if (!res.ok) {
-          document.cookie = "sid=; path=/; max-age=0";
-          document.cookie = "__Host-sid=; path=/; max-age=0";
-          window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
+          window.location.replace(`/admin/login?alihkan=${encodeURIComponent(pathname)}`);
           return;
         }
 
@@ -54,14 +52,10 @@ export default function AdminLayout({
           setPenggunaAktif(json.data);
           setSedangMemuatAuth(false);
         } else {
-          document.cookie = "sid=; path=/; max-age=0";
-          document.cookie = "__Host-sid=; path=/; max-age=0";
-          window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
+          window.location.replace(`/admin/login?alihkan=${encodeURIComponent(pathname)}`);
         }
       } catch {
-        document.cookie = "sid=; path=/; max-age=0";
-        document.cookie = "__Host-sid=; path=/; max-age=0";
-        window.location.href = `/admin/login?alihkan=${encodeURIComponent(pathname)}`;
+        window.location.replace(`/admin/login?alihkan=${encodeURIComponent(pathname)}`);
       }
     };
 
@@ -89,20 +83,20 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-paper flex">
+    <div className="min-h-screen bg-paper flex font-sans">
       {/* 1. Sidebar Tetap Desktop (Permanen di Sisi Kiri) */}
-      <aside className="w-64 bg-surface border-r border-line p-6 flex flex-col justify-between shrink-0 min-h-screen shadow-sm">
+      <aside className="w-64 bg-surface border-r border-line p-6 flex flex-col justify-between shrink-0 min-h-screen shadow-xs">
         <div className="space-y-8">
           {/* Logo & Judul Panel Admin */}
-          <Link href="/admin" className="flex items-center gap-3 pb-6 border-b border-line">
-            <div className="w-9 h-9 rounded-md bg-ink text-paper flex items-center justify-center font-serif font-bold text-lg shadow-sm">
+          <Link href="/admin" className="flex items-center gap-3 pb-6 border-b border-line group">
+            <div className="w-9 h-9 rounded-md bg-ink text-paper flex items-center justify-center font-serif font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
               B
             </div>
             <div>
-              <span className="font-serif font-semibold text-xl block leading-none text-ink">
+              <span className="font-serif font-bold text-xl block leading-none text-ink">
                 Bilik Baca
               </span>
-              <span className="font-mono text-[10px] text-ink-muted uppercase tracking-widest block mt-1">
+              <span className="font-mono text-[10px] text-ink-muted uppercase tracking-widest block mt-1.5 font-medium">
                 Panel Staf & Admin
               </span>
             </div>
@@ -114,8 +108,8 @@ export default function AdminLayout({
               href="/admin"
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                 pathname === "/admin"
-                  ? "bg-paper-sunken text-ink font-semibold"
-                  : "text-ink hover:bg-paper-sunken"
+                  ? "bg-paper-sunken text-ink font-semibold shadow-xs"
+                  : "text-ink hover:bg-paper-sunken/60"
               }`}
             >
               <LayoutDashboard className="w-4 h-4 text-ink-muted" />
@@ -126,8 +120,8 @@ export default function AdminLayout({
               href="/admin/sirkulasi"
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                 pathname.startsWith("/admin/sirkulasi")
-                  ? "bg-paper-sunken text-ink font-semibold"
-                  : "text-ink hover:bg-paper-sunken"
+                  ? "bg-paper-sunken text-ink font-semibold shadow-xs"
+                  : "text-ink hover:bg-paper-sunken/60"
               }`}
             >
               <Repeat className="w-4 h-4 text-ink-muted" />
@@ -138,8 +132,8 @@ export default function AdminLayout({
               href="/admin/buku"
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                 pathname.startsWith("/admin/buku")
-                  ? "bg-paper-sunken text-ink font-semibold"
-                  : "text-ink hover:bg-paper-sunken"
+                  ? "bg-paper-sunken text-ink font-semibold shadow-xs"
+                  : "text-ink hover:bg-paper-sunken/60"
               }`}
             >
               <BookMarked className="w-4 h-4 text-ink-muted" />
@@ -150,8 +144,8 @@ export default function AdminLayout({
               href="/admin/anggota"
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                 pathname.startsWith("/admin/anggota")
-                  ? "bg-paper-sunken text-ink font-semibold"
-                  : "text-ink hover:bg-paper-sunken"
+                  ? "bg-paper-sunken text-ink font-semibold shadow-xs"
+                  : "text-ink hover:bg-paper-sunken/60"
               }`}
             >
               <Users className="w-4 h-4 text-ink-muted" />
@@ -162,8 +156,8 @@ export default function AdminLayout({
               href="/admin/laporan"
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                 pathname.startsWith("/admin/laporan")
-                  ? "bg-paper-sunken text-ink font-semibold"
-                  : "text-ink hover:bg-paper-sunken"
+                  ? "bg-paper-sunken text-ink font-semibold shadow-xs"
+                  : "text-ink hover:bg-paper-sunken/60"
               }`}
             >
               <FileText className="w-4 h-4 text-ink-muted" />
@@ -174,8 +168,8 @@ export default function AdminLayout({
               href="/admin/pengaturan"
               className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                 pathname.startsWith("/admin/pengaturan")
-                  ? "bg-paper-sunken text-ink font-semibold"
-                  : "text-ink hover:bg-paper-sunken"
+                  ? "bg-paper-sunken text-ink font-semibold shadow-xs"
+                  : "text-ink hover:bg-paper-sunken/60"
               }`}
             >
               <Settings className="w-4 h-4 text-ink-muted" />
