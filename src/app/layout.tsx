@@ -49,6 +49,29 @@ export default function RootLayout({
       lang="id"
       className={`${newsreader.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Isolasi Origin: Bersihkan Service Worker dan Cache Storage dari aplikasi lain pada localhost (mis. PWA mystrava)
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for (var r of registrations) {
+                    r.unregister();
+                  }
+                });
+              }
+              if (typeof window !== 'undefined' && 'caches' in window) {
+                caches.keys().then(function(keys) {
+                  for (var k of keys) {
+                    caches.delete(k);
+                  }
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased selection:bg-ink selection:text-paper font-sans">
         {children}
       </body>

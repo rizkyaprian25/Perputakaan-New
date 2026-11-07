@@ -5,6 +5,7 @@
   "description": "Sistem Informasi & Manajemen Perpustakaan Sekolah - Bilik Baca",
   "scripts": {
     "dev": "next dev",
+    "dev:3001": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
