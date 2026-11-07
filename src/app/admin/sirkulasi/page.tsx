@@ -917,88 +917,117 @@ export default function SirkulasiWorkstationPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODAL STRUK BUKTI PEMINJAMAN (SIAP CETAK)                                 */}
+      {/* MODAL STRUK BUKTI PEMINJAMAN (FORMAT THERMAL 80MM / SLIP RESMI)           */}
       {/* ========================================================================= */}
       {strukPinjam && (
-        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface border border-line rounded-xl max-w-md w-full p-6 shadow-xl space-y-5">
+        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4 print:p-0 print:bg-white print:static print:block">
+          <div className="bg-surface border border-line rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 print:border-none print:shadow-none print:p-0 print:max-w-none">
+            {/* Header Modal - Tersembunyi saat Cetak */}
             <div className="flex items-center justify-between border-b border-line pb-3 print:hidden">
               <div className="flex items-center gap-2 text-status-tersedia">
                 <CheckCircle2 className="w-5 h-5" />
                 <h3 className="font-serif font-bold text-lg text-ink">
-                  Bukti Peminjaman Buku
+                  Bukti Peminjaman Buku Selesai
                 </h3>
               </div>
               <button
                 onClick={() => setStrukPinjam(null)}
-                className="text-ink-muted hover:text-ink"
+                className="text-ink-muted hover:text-ink p-1 rounded"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Area Cetak Struk */}
-            <div className="p-4 rounded-lg border border-dashed border-line bg-paper space-y-3 text-xs font-mono">
-              <div className="text-center border-b border-line pb-2">
-                <div className="font-serif font-bold text-base text-ink">
-                  PERPUSTAKAAN BILIK BACA
-                </div>
-                <div className="text-[11px] text-ink-muted">
-                  Tanda Terima Peminjaman Koleksi
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">Peminjam:</span>
-                  <span className="font-bold text-ink">{strukPinjam.namaPeminjam}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">NIS / Kelas:</span>
-                  <span className="text-ink">
-                    {strukPinjam.nomorInduk} / {strukPinjam.kelas || "Umum"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">Tanggal Pinjam:</span>
-                  <span className="text-ink">{strukPinjam.dipinjamPada}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-muted">Batas Kembali:</span>
-                  <span className="font-bold text-danger">{strukPinjam.jatuhTempo}</span>
-                </div>
-              </div>
-
-              <div className="border-t border-line pt-2 space-y-1.5">
-                <div className="text-[11px] uppercase text-ink-muted font-bold">
-                  Daftar Buku ({strukPinjam.jumlahBuku} Eksemplar):
-                </div>
-                {strukPinjam.daftarBuku.map((b, i) => (
-                  <div key={i} className="flex justify-between gap-2">
-                    <span className="font-bold text-ink">{b.kode}</span>
-                    <span className="text-ink text-right truncate">{b.judul}</span>
+            {/* Area Cetak Struk Fisik: Format Lebar 80mm Kompatibel Printer Kasir & A4 */}
+            <div className="flex justify-center print:block print:m-0 print:p-0">
+              <div className="w-full max-w-sm p-5 rounded-lg border-2 border-dashed border-ink/40 bg-white space-y-3 text-xs font-mono print:border print:border-black print:rounded-none print:p-4 print:max-w-[80mm] print:text-[10px] break-inside-avoid shadow-xs">
+                {/* Header Struk Resmi */}
+                <div className="text-center border-b border-black pb-2 space-y-0.5">
+                  <div className="font-serif font-bold text-sm text-black tracking-tight uppercase">
+                    Perpustakaan Bilik Baca
                   </div>
-                ))}
-              </div>
+                  <div className="text-[10px] text-gray-700">
+                    SLIP BUKTI PEMINJAMAN KOLEKSI
+                  </div>
+                  <div className="text-[9px] text-gray-600 font-mono">
+                    Dicetak: {new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} • {new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+                  </div>
+                </div>
 
-              <div className="border-t border-line pt-2 text-[10px] text-center text-ink-muted">
-                Harap kembalikan buku tepat waktu dan jaga kondisi buku tetap baik.
+                {/* Data Peminjam */}
+                <div className="space-y-1 text-black border-b border-black/40 pb-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Peminjam:</span>
+                    <span className="font-bold truncate max-w-[180px]">{strukPinjam.namaPeminjam}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">NIS / Kelas:</span>
+                    <span className="font-semibold">
+                      {strukPinjam.nomorInduk} / {strukPinjam.kelas || "Umum"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tgl Pinjam:</span>
+                    <span>{strukPinjam.dipinjamPada}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-black border-t border-black/20 pt-1">
+                    <span>Jatuh Tempo:</span>
+                    <span className="border-b border-black pb-0.5">{strukPinjam.jatuhTempo}</span>
+                  </div>
+                </div>
+
+                {/* Daftar Buku yang Dipinjam */}
+                <div className="space-y-1.5 border-b border-black/40 pb-2">
+                  <div className="text-[10px] uppercase font-bold text-gray-800">
+                    Buku Dipinjam ({strukPinjam.jumlahBuku} Unit):
+                  </div>
+                  {strukPinjam.daftarBuku.map((b, i) => (
+                    <div key={i} className="flex justify-between items-start gap-2 text-[10px]">
+                      <span className="font-bold font-mono shrink-0">{b.kode}</span>
+                      <span className="text-right truncate flex-1">{b.judul}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Catatan Peraturan Perpustakaan */}
+                <div className="text-[9px] text-center text-gray-700 leading-tight">
+                  Masa pinjam 7 hari. Keterlambatan dikenakan denda sesuai tata tertib perpustakaan sekolah.
+                </div>
+
+                {/* Kolom Tanda Tangan */}
+                <div className="grid grid-cols-2 gap-4 pt-3 text-[9px] text-center text-black">
+                  <div>
+                    <p className="text-gray-600">Peminjam,</p>
+                    <div className="h-10 print:h-8" />
+                    <p className="font-bold border-t border-black/60 pt-0.5 truncate">
+                      {strukPinjam.namaPeminjam}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Petugas Jaga,</p>
+                    <div className="h-10 print:h-8" />
+                    <p className="font-bold border-t border-black/60 pt-0.5">
+                      Bilik Baca
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 print:hidden">
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2 rounded-md border border-line bg-white hover:bg-paper-sunken text-xs font-semibold inline-flex items-center gap-1.5 min-h-[40px]"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Cetak Struk</span>
-              </button>
+            {/* Tombol Aksi - Tersembunyi saat Cetak */}
+            <div className="flex justify-end gap-2 pt-2 border-t border-line print:hidden">
               <button
                 onClick={() => setStrukPinjam(null)}
-                className="px-5 py-2 rounded-md bg-ink text-paper text-xs font-semibold min-h-[40px]"
+                className="px-4 py-2 rounded-lg border border-line bg-surface text-ink text-xs font-semibold hover:bg-paper-sunken min-h-[40px]"
               >
-                Selesai
+                Tutup
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5 min-h-[40px] shadow-sm"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Cetak Struk Fisik</span>
               </button>
             </div>
           </div>

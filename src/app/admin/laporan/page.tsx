@@ -252,12 +252,20 @@ export default function AdminLaporanPage() {
         </div>
       </div>
 
-      {/* Kop Cetak Resmi (Hanya Muncul Saat window.print) */}
-      <div className="hidden print:block text-center border-b-2 border-black pb-4 mb-6">
-        <h2 className="font-serif font-bold text-2xl uppercase">Perpustakaan Bilik Baca</h2>
-        <p className="text-xs text-gray-700">Laporan Resmi Sirkulasi & Operasional Perpustakaan Sekolah</p>
-        <p className="font-mono text-[10px] text-gray-500 mt-1">
-          Dicetak pada: {new Date().toLocaleDateString("id-ID", { dateStyle: "full" })}
+      {/* Kop Cetak Kedinasan Resmi (Hanya Muncul Saat window.print) */}
+      <div className="hidden print:block border-b-4 border-double border-black pb-4 mb-6 text-center">
+        <h2 className="font-serif font-extrabold text-2xl uppercase tracking-wider text-black">
+          PERPUSTAKAAN SEKOLAH &ldquo;BILIK BACA&rdquo;
+        </h2>
+        <p className="text-xs text-black font-medium mt-0.5">
+          Unit Pelaksana Teknis Pengelolaan Arsip, Koleksi Buku, dan Sirkulasi Siswa
+        </p>
+        <p className="font-mono text-[10px] text-gray-700 mt-1">
+          Laporan: {tabAktif === "sirkulasi" ? "Rekapitulasi Transaksi Sirkulasi Koleksi" : tabAktif === "kunjungan" ? "Rekapitulasi Presensi Kunjungan Kiosk" : "Statistik Koleksi & Peringkat Pembaca"}
+          {dariTanggal || sampaiTanggal ? ` • Periode: ${dariTanggal || "Awal"} s/d ${sampaiTanggal || "Sekarang"}` : " • Periode: Seluruh Data Aktif"}
+        </p>
+        <p className="font-mono text-[9px] text-gray-500 mt-0.5">
+          Dokumen Resmi • Dicetak pada: {new Date().toLocaleDateString("id-ID", { dateStyle: "full" })}
         </p>
       </div>
 
@@ -539,6 +547,28 @@ export default function AdminLaporanPage() {
           </div>
         </div>
       )}
+
+      {/* Kolom Pengesahan Tanda Tangan Resmi (Hanya Muncul Saat window.print) */}
+      <div className="hidden print:grid grid-cols-2 gap-8 pt-8 mt-6 border-t-2 border-black text-center text-xs break-inside-avoid">
+        <div>
+          <p className="text-gray-700">Mengetahui,</p>
+          <p className="font-bold text-black">Kepala Sekolah</p>
+          <div className="h-20" />
+          <p className="font-bold border-b border-black inline-block min-w-[200px] text-black">
+            (......................................................)
+          </p>
+          <p className="text-[10px] text-gray-600 font-mono mt-0.5">NIP. ........................................</p>
+        </div>
+        <div>
+          <p className="text-gray-700">Penanggung Jawab,</p>
+          <p className="font-bold text-black">Kepala Perpustakaan Bilik Baca</p>
+          <div className="h-20" />
+          <p className="font-bold border-b border-black inline-block min-w-[200px] text-black">
+            (......................................................)
+          </p>
+          <p className="text-[10px] text-gray-600 font-mono mt-0.5">NIP. ........................................</p>
+        </div>
+      </div>
     </div>
   );
 }

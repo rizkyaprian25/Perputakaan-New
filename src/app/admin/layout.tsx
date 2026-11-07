@@ -83,9 +83,9 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-paper flex font-sans">
-      {/* 1. Sidebar Tetap Desktop (Permanen di Sisi Kiri) */}
-      <aside className="w-64 bg-surface border-r border-line p-6 flex flex-col justify-between shrink-0 min-h-screen shadow-xs">
+    <div className="min-h-screen bg-paper flex font-sans print:min-h-0 print:bg-white print:block">
+      {/* 1. Sidebar Tetap Desktop (Permanen di Sisi Kiri - Tersembunyi saat Cetak) */}
+      <aside className="w-64 bg-surface border-r border-line p-6 flex flex-col justify-between shrink-0 min-h-screen shadow-xs print:hidden">
         <div className="space-y-8">
           {/* Logo & Judul Panel Admin */}
           <Link href="/admin" className="flex items-center gap-3 pb-6 border-b border-line group">
@@ -220,8 +220,8 @@ export default function AdminLayout({
       </aside>
 
       {/* 2. Area Konten Utama Desktop */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-surface/90 backdrop-blur-sm border-b border-line px-8 py-4 flex items-center justify-between">
+      <div className="flex-1 flex flex-col min-w-0 print:block print:w-full">
+        <header className="bg-surface/90 backdrop-blur-sm border-b border-line px-8 py-4 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-3">
             <span className="font-serif font-bold text-lg text-ink">Bilik Baca</span>
             <span className="text-ink-muted">/</span>
@@ -240,7 +240,7 @@ export default function AdminLayout({
           </div>
         </header>
 
-        <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-8 overflow-y-auto print:p-0 print:overflow-visible print:w-full">{children}</main>
       </div>
     </div>
   );

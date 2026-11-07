@@ -980,9 +980,10 @@ export default function AdminBukuPage() {
       {/* MODAL 3: KELOLA EKSEMPLAR FISIK & CETAK STIKER QR BUKU                    */}
       {/* ========================================================================= */}
       {modalEksemplarBuka && detailBukuAktif && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
-          <div className="bg-surface border border-line rounded-2xl max-w-4xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between border-b border-line pb-4 mb-4">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:p-0 print:bg-white print:static print:block">
+          <div className="bg-surface border border-line rounded-2xl max-w-4xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh] print:border-none print:shadow-none print:h-auto print:max-h-none print:max-w-none print:w-full print:p-0 print:overflow-visible">
+            {/* Header Modal - Tersembunyi saat Cetak */}
+            <div className="flex items-center justify-between border-b border-line pb-4 mb-4 print:hidden">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded bg-ink text-paper">
@@ -1022,19 +1023,20 @@ export default function AdminBukuPage() {
             </div>
 
             {loadingEksemplar ? (
-              <div className="py-12 text-center font-mono text-xs text-ink-muted">
+              <div className="py-12 text-center font-mono text-xs text-ink-muted print:hidden">
                 Memuat daftar unit eksemplar...
               </div>
             ) : modeCetakStiker ? (
-              /* TAMPILAN PRATINJAU STIKER QR SIAP CETAK */
-              <div className="flex-1 overflow-y-auto space-y-4">
-                <div className="flex items-center justify-between bg-paper-sunken/70 p-3.5 rounded-lg border border-line">
+              /* TAMPILAN LEMBAR STIKER QR BUKU SIAP CETAK (65mm x 35mm per stiker) */
+              <div className="flex-1 overflow-y-auto space-y-4 print:overflow-visible print:p-0">
+                {/* Toolbar Pratinjau - Tersembunyi saat Cetak */}
+                <div className="flex items-center justify-between bg-paper-sunken/70 p-3.5 rounded-lg border border-line print:hidden">
                   <p className="text-xs text-ink">
                     Menampilkan{" "}
                     <strong>
                       {(eksemplarCetakTerpilih || daftarEksemplarAktif).length} label stiker QR
                     </strong>{" "}
-                    untuk ditempel pada punggung atau sampul dalam buku.
+                    format standar perpustakaan (siap tempel di punggung & sampul buku).
                   </p>
                   <div className="flex items-center gap-2">
                     {eksemplarCetakTerpilih && (
@@ -1047,32 +1049,40 @@ export default function AdminBukuPage() {
                     )}
                     <button
                       onClick={() => window.print()}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 shadow-sm"
                     >
                       <Printer className="w-4 h-4" />
-                      <span>Cetak Stiker Sekarang</span>
+                      <span>Cetak Lembar Stiker</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-2">
+                {/* Lembar Stiker Fisik: Grid 3 Kolom Kompatibel Kertas Stiker Label A4 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-2 print:grid-cols-3 print:gap-2.5 print:p-0 print:max-w-none">
                   {(eksemplarCetakTerpilih || daftarEksemplarAktif).map((eks) => (
                     <div
                       key={eks.id}
-                      className="border-2 border-ink/80 rounded-lg p-3 bg-white flex items-center gap-3 shadow-sm"
+                      className="border-2 border-dashed border-ink/40 rounded-xl p-2.5 bg-white flex items-center gap-2.5 print:border print:border-dashed print:border-black print:rounded-none print:p-2 print-card-unit break-inside-avoid shadow-xs"
                     >
-                      <img
-                        src={`/api/v1/admin/qr?tipe=buku&id=${eks.id}`}
-                        alt={eks.kode}
-                        className="w-20 h-20 object-contain shrink-0 border border-line p-1 rounded"
-                      />
+                      <div className="p-1 bg-white border border-black rounded shrink-0 print:p-0.5">
+                        <img
+                          src={`/api/v1/admin/qr?tipe=buku&id=${eks.id}`}
+                          alt={eks.kode}
+                          className="w-18 h-18 object-contain shrink-0 print:w-[20mm] print:h-[20mm]"
+                        />
+                      </div>
                       <div className="min-w-0 flex-1 space-y-1">
-                        <span className="font-mono text-[9px] uppercase tracking-wider bg-ink text-white px-1.5 py-0.5 rounded block w-fit">
+                        <span className="font-mono text-[8px] uppercase tracking-wider bg-black text-white px-1.5 py-0.5 rounded block w-fit font-bold print:text-[7px]">
                           BILIK BACA • {detailBukuAktif.lokasiRak || "RAK"}
                         </span>
-                        <p className="font-mono font-bold text-sm text-ink">{eks.kode}</p>
-                        <p className="font-serif font-semibold text-xs text-ink line-clamp-2 leading-tight">
+                        <p className="font-mono font-bold text-xs text-black tracking-tight print:text-[11px]">
+                          {eks.kode}
+                        </p>
+                        <p className="font-serif font-bold text-xs text-black line-clamp-2 leading-tight print:text-[10px]">
                           {detailBukuAktif.judul}
+                        </p>
+                        <p className="font-sans text-[10px] text-gray-700 truncate print:text-[8px]">
+                          {detailBukuAktif.penulis}
                         </p>
                       </div>
                     </div>

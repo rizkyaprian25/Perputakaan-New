@@ -943,13 +943,14 @@ export default function AdminAnggotaPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: CETAK KARTU TUNGGAL                                             */}
+      {/* MODAL 3: CETAK KARTU TUNGGAL (FORMAT ID-1 FISIK)                         */}
       {/* ========================================================================= */}
       {modalCetakBuka && selectedAnggota && (
-        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:bg-white print:p-0">
-          <div className="bg-surface border border-line rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center print:border-none print:shadow-none print:p-0">
+        <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in print:p-0 print:bg-white print:static print:block">
+          <div className="bg-surface border border-line rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 print:border-none print:shadow-none print:p-0 print:max-w-none">
+            {/* Header Modal - Tersembunyi saat Cetak */}
             <div className="flex items-center justify-between border-b border-line pb-3 print:hidden">
-              <h3 className="font-serif font-bold text-base text-ink">Kartu Anggota Perpustakaan</h3>
+              <h3 className="font-serif font-bold text-base text-ink">Pratinjau Kartu Anggota</h3>
               <button
                 onClick={() => setModalCetakBuka(false)}
                 className="p-1 rounded text-ink-muted hover:text-ink"
@@ -958,58 +959,98 @@ export default function AdminAnggotaPage() {
               </button>
             </div>
 
-            {/* Kartu Fisik Preview */}
-            <div className="border border-line rounded-xl p-6 bg-paper shadow-sm flex flex-col items-center space-y-3 print:border print:border-black print:rounded-none">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded bg-ink text-paper flex items-center justify-center font-serif font-bold text-sm">
-                  B
+            {/* Kartu Fisik ID-1 Bersih (Hanya Ini yang Tercetak ke Kertas/PDF) */}
+            <div className="flex justify-center print:block print:m-0 print:p-0">
+              <div className="w-[340px] border-2 border-dashed border-ink/40 rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between print:w-[85.6mm] print:h-[54mm] print:border print:border-dashed print:border-black print:rounded-none print:p-3 print:shadow-none print-card-unit break-inside-avoid">
+                {/* Header Kartu Resmi */}
+                <div className="flex items-center justify-between border-b border-black/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded bg-black text-white flex items-center justify-center font-serif font-bold text-xs print:w-5 print:h-5 print:text-[10px]">
+                      B
+                    </div>
+                    <div>
+                      <span className="font-serif font-bold text-xs uppercase tracking-tight block text-black leading-none">
+                        Bilik Baca
+                      </span>
+                      <span className="font-mono text-[8px] uppercase tracking-wider text-gray-700 block mt-0.5">
+                        Perpustakaan Sekolah
+                      </span>
+                    </div>
+                  </div>
+                  <span className="font-mono text-[8px] uppercase font-bold px-1.5 py-0.5 rounded border border-black text-black">
+                    KARTU ANGGOTA
+                  </span>
                 </div>
-                <span className="font-serif font-bold text-base text-ink">Bilik Baca</span>
-              </div>
 
-              {/* QR Image dari API */}
-              <div className="p-2 bg-white rounded-lg border border-line">
-                <img
-                  src={`/api/v1/admin/qr?tipe=anggota&id=${selectedAnggota.id}`}
-                  alt="QR Kartu Siswa"
-                  className="w-40 h-40 object-contain"
-                />
-              </div>
+                {/* Badan Kartu: QR Code + Data Siswa */}
+                <div className="flex items-center gap-3 py-2">
+                  <div className="p-1 bg-white border border-black rounded shrink-0 print:p-0.5">
+                    <img
+                      src={`/api/v1/admin/qr?tipe=anggota&id=${selectedAnggota.id}`}
+                      alt={`QR ${selectedAnggota.nama}`}
+                      className="w-20 h-20 object-contain print:w-[22mm] print:h-[22mm]"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <h4 className="font-serif font-bold text-sm text-black truncate leading-tight print:text-xs">
+                      {selectedAnggota.nama}
+                    </h4>
+                    <p className="font-mono text-xs text-black font-semibold print:text-[10px]">
+                      NIS: {selectedAnggota.nomorInduk}
+                    </p>
+                    <p className="font-mono text-xs text-gray-800 print:text-[10px]">
+                      Kelas: {selectedAnggota.kelas || "Umum"}
+                    </p>
+                    <p className="font-mono text-[9px] text-gray-600 print:text-[8px] capitalize">
+                      Kategori: {selectedAnggota.jenis} • Aktif
+                    </p>
+                  </div>
+                </div>
 
-              <div>
-                <h4 className="font-serif font-bold text-base text-ink">{selectedAnggota.nama}</h4>
-                <p className="font-mono text-xs text-ink-muted mt-0.5">
-                  NIS: {selectedAnggota.nomorInduk} • Kelas: {selectedAnggota.kelas || "Umum"}
-                </p>
+                {/* Footer Kartu & Garis Potong */}
+                <div className="border-t border-black/60 pt-1.5 flex items-center justify-between text-[8px] font-mono text-gray-700 print:text-[7px]">
+                  <span>Pindai QR saat presensi & peminjaman</span>
+                  <span className="font-semibold text-black">Tahun Ajaran 2026/2027</span>
+                </div>
               </div>
             </div>
 
-            <button
-              onClick={() => window.print()}
-              className="w-full py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 print:hidden"
-            >
-              Cetak Kartu Sekarang
-            </button>
+            {/* Tombol Aksi - Tersembunyi saat Cetak */}
+            <div className="pt-2 flex items-center justify-end gap-2 print:hidden">
+              <button
+                onClick={() => setModalCetakBuka(false)}
+                className="px-4 py-2 rounded-lg border border-line bg-surface text-ink text-xs font-semibold hover:bg-paper-sunken"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Cetak Kartu Fisik</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 4: CETAK KARTU MASSAL A4 PER KELAS                                 */}
+      {/* MODAL 4: CETAK KARTU MASSAL A4 PER KELAS (8 KARTU PER LEMBAR A4)          */}
       {/* ========================================================================= */}
       {modalCetakMassalBuka && (
-        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 print:p-0 print:bg-white animate-fade-in">
-          <div className="bg-surface border border-line rounded-2xl max-w-4xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden print:border-none print:shadow-none print:h-auto print:max-w-none print:w-full">
+        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 print:p-0 print:bg-white print:static print:block animate-fade-in">
+          <div className="bg-surface border border-line rounded-2xl max-w-4xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden print:border-none print:shadow-none print:h-auto print:max-h-none print:max-w-none print:w-full print:overflow-visible">
             {/* Header Dialog (Tersembunyi Saat Dicetak) */}
             <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-surface shrink-0 print:hidden">
               <div className="flex items-center gap-3">
                 <Printer className="w-5 h-5 text-ink-muted" />
                 <div>
                   <h3 className="font-serif font-bold text-base text-ink">
-                    Cetak Kartu Anggota Massal (Format Kertas A4)
+                    Cetak Kartu Anggota Massal (Lembar Kertas A4)
                   </h3>
                   <p className="text-xs text-ink-muted">
-                    Total {anggotaUntukCetakMassal.length} siswa siap dicetak dalam kisi kartu siap potong.
+                    Total {anggotaUntukCetakMassal.length} siswa dalam format kisi 8 kartu per lembar A4 siap gunting.
                   </p>
                 </div>
               </div>
@@ -1031,7 +1072,7 @@ export default function AdminAnggotaPage() {
 
                 <button
                   onClick={() => window.print()}
-                  className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 inline-flex items-center gap-1.5 shadow-sm"
                 >
                   <Printer className="w-4 h-4" />
                   <span>Cetak Dokumen A4</span>
@@ -1039,42 +1080,62 @@ export default function AdminAnggotaPage() {
 
                 <button
                   onClick={() => setModalCetakMassalBuka(false)}
-                  className="p-1 rounded text-ink-muted hover:text-ink"
+                  className="p-1.5 rounded-md text-ink-muted hover:text-ink hover:bg-paper-sunken"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Area Lembar Cetak A4 */}
-            <div className="flex-1 p-6 overflow-y-auto bg-paper print:bg-white print:p-0">
-              <div className="grid grid-cols-2 gap-4 max-w-[800px] mx-auto print:max-w-none print:grid-cols-2 print:gap-3">
+            {/* Area Lembar Cetak A4: Kisi Presisi 2 Kolom x 4 Baris Siap Gunting */}
+            <div className="flex-1 p-6 overflow-y-auto bg-paper print:bg-white print:p-0 print:overflow-visible">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[800px] mx-auto print:max-w-none print:grid-cols-2 print:gap-3 print:p-0">
                 {anggotaUntukCetakMassal.map((m) => (
                   <div
                     key={m.id}
-                    className="border-2 border-dashed border-line rounded-lg p-4 bg-white flex items-center gap-3.5 print:border-black print:rounded-none break-inside-avoid shadow-xs"
+                    className="border-2 border-dashed border-ink/40 rounded-xl p-3 bg-white flex flex-col justify-between print:border print:border-dashed print:border-black print:rounded-none print:p-2.5 print-card-unit break-inside-avoid shadow-xs"
                   >
-                    <div className="p-1 bg-white border border-line rounded shrink-0 print:border-black">
-                      <img
-                        src={`/api/v1/admin/qr?tipe=anggota&id=${m.id}`}
-                        alt={`QR ${m.nama}`}
-                        className="w-24 h-24 object-contain"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-1.5 border-b border-line/60 pb-1">
-                        <div className="w-4 h-4 rounded bg-ink text-paper flex items-center justify-center font-serif font-bold text-[9px]">
+                    {/* Header Kartu Mini */}
+                    <div className="flex items-center justify-between border-b border-black/70 pb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded bg-black text-white flex items-center justify-center font-serif font-bold text-[9px] print:w-4 print:h-4 print:text-[8px]">
                           B
                         </div>
-                        <span className="font-serif font-bold text-xs text-ink">Bilik Baca</span>
+                        <span className="font-serif font-bold text-xs uppercase text-black leading-none print:text-[10px]">
+                          Bilik Baca Perpustakaan
+                        </span>
                       </div>
-                      <h4 className="font-serif font-bold text-sm text-ink truncate leading-tight">
-                        {m.nama}
-                      </h4>
-                      <p className="font-mono text-[11px] text-ink-muted">NIS: {m.nomorInduk}</p>
-                      <p className="font-mono text-[11px] font-semibold text-ink">
-                        Kelas: {m.kelas || "Umum"}
-                      </p>
+                      <span className="font-mono text-[8px] uppercase font-bold px-1 rounded border border-black text-black">
+                        SISWA
+                      </span>
+                    </div>
+
+                    {/* Isi Kartu */}
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="p-0.5 bg-white border border-black rounded shrink-0">
+                        <img
+                          src={`/api/v1/admin/qr?tipe=anggota&id=${m.id}`}
+                          alt={`QR ${m.nama}`}
+                          className="w-18 h-18 object-contain print:w-[19mm] print:h-[19mm]"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <h4 className="font-serif font-bold text-xs text-black truncate leading-tight print:text-[11px]">
+                          {m.nama}
+                        </h4>
+                        <p className="font-mono text-xs text-black font-semibold print:text-[10px]">
+                          NIS: {m.nomorInduk}
+                        </p>
+                        <p className="font-mono text-[11px] text-gray-800 print:text-[9px]">
+                          Kelas: {m.kelas || "Umum"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Footer Garis Gunting */}
+                    <div className="border-t border-black/50 pt-1 flex items-center justify-between text-[8px] font-mono text-gray-600 print:text-[7px]">
+                      <span>Gunting mengikuti garis putus-putus</span>
+                      <span>TA 2026/2027</span>
                     </div>
                   </div>
                 ))}
