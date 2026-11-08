@@ -48,12 +48,12 @@ function LoginForm() {
       <div className="max-w-md w-full bg-surface border border-line rounded-xl p-8 shadow-sm space-y-6">
         {/* Header Form */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-lg bg-ink text-paper flex items-center justify-center font-serif font-bold text-2xl mx-auto shadow-sm">
-            B
+          <div className="w-12 h-12 rounded-xl bg-ink text-paper flex items-center justify-center font-serif font-bold text-2xl mx-auto shadow-sm">
+            N
           </div>
-          <h1 className="font-serif text-2xl font-bold text-ink">Masuk Portal Staf</h1>
+          <h1 className="font-serif text-2xl font-bold text-ink">Portal Staf Perpustakaan NETRI</h1>
           <p className="text-xs text-ink-muted">
-            Sistem Informasi & Meja Sirkulasi Perpustakaan Sekolah
+            Sistem Informasi & Meja Sirkulasi Perpustakaan NETRI
           </p>
         </div>
 

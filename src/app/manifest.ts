@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Bilik Baca - Sistem Perpustakaan Sekolah",
-    short_name: "Bilik Baca",
-    description: "Katalog buku sekolah, absensi kunjungan mandiri, dan sirkulasi peminjaman cepat untuk siswa dan guru.",
+    name: "Perpustakaan NETRI — Sistem Perpustakaan Sekolah",
+    short_name: "Perpustakaan NETRI",
+    description: "Katalog buku sekolah, presensi kunjungan mandiri, dan sirkulasi peminjaman cepat Perpustakaan NETRI.",
     start_url: "/",
     display: "standalone",
     background_color: "#FBF9F5",

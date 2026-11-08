@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Manajemen Koleksi Buku (Admin & Petugas)
+ * Perpustakaan NETRI - API Manajemen Koleksi Buku (Admin & Petugas)
  * Mendukung penambahan judul baru, penyimpanan sampul, dan pembuatan N eksemplar fisik otomatis.
  */
 

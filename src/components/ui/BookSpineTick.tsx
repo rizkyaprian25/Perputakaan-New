@@ -1,6 +1,6 @@
 /**
  * Penanda Ketersediaan Eksemplar ("Punggung Buku")
- * Komponen khas Bilik Baca: deretan balok vertikal kecil (satu balok per eksemplar).
+ * Komponen khas Perpustakaan NETRI: deretan balok vertikal kecil (satu balok per eksemplar).
  * Terisi status-tersedia = ada, kosong berkontur line = dipinjam.
  * Selalu ditemani teks ringkas, tidak pernah mengandalkan warna saja (Aksesibel).
  */

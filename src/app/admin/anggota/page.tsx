@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Halaman Manajemen Anggota Perpustakaan
+ * Perpustakaan NETRI - Halaman Manajemen Anggota Perpustakaan
  * Mendukung Pencarian Real-time, Filter Status & Kelas, Paginasi (25 baris/halaman),
  * Tambah Manual, Edit Anggota, Riwayat Siswa, Cetak Kartu Individual & Cetak Kartu Massal A4 per Kelas,
  * serta Sinkronisasi Netri SMS Supabase.
@@ -975,14 +975,14 @@ export default function AdminAnggotaPage() {
                 <div className="flex items-center justify-between border-b border-black/80 pb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded bg-black text-white flex items-center justify-center font-serif font-bold text-xs print:w-5 print:h-5 print:text-[10px]">
-                      B
+                      N
                     </div>
                     <div>
                       <span className="font-serif font-bold text-xs uppercase tracking-tight block text-black leading-none">
-                        Bilik Baca
+                        Perpustakaan NETRI
                       </span>
                       <span className="font-mono text-[8px] uppercase tracking-wider text-gray-700 block mt-0.5">
-                        Perpustakaan Sekolah
+                        Kartu Anggota Resmi
                       </span>
                     </div>
                   </div>
@@ -1129,10 +1129,10 @@ export default function AdminAnggotaPage() {
                     <div className="flex items-center justify-between border-b border-black/70 pb-1.5">
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded bg-black text-white flex items-center justify-center font-serif font-bold text-[9px] print:w-4 print:h-4 print:text-[8px]">
-                          B
+                          N
                         </div>
                         <span className="font-serif font-bold text-xs uppercase text-black leading-none print:text-[10px]">
-                          Bilik Baca Perpustakaan
+                          Perpustakaan NETRI
                         </span>
                       </div>
                       <span className="font-mono text-[8px] uppercase font-bold px-1 rounded border border-black text-black">

@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Helper Pencatatan Log Audit (Append-Only)
+ * Perpustakaan NETRI - Helper Pencatatan Log Audit (Append-Only)
  * Standar Keamanan 2: Mencatat setiap aksi penting sistem tanpa menyimpan PII sensitif.
  */
 

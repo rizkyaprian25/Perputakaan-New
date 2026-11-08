@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pusat Laporan & Analitik Perpustakaan
+ * Perpustakaan NETRI - API Pusat Laporan & Analitik Perpustakaan
  * Menyediakan riwayat sirkulasi lengkap, rekap kunjungan, buku terpopuler, dan siswa teraktif.
  */
 

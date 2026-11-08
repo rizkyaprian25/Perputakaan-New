@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Skema Validasi Runtime (Zod)
+ * Perpustakaan NETRI - Skema Validasi Runtime (Zod)
  * Validasi ketat batas data (System Boundaries) anti Mass-Assignment dan Injection.
  */
 

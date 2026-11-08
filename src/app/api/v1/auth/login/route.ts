@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Autentikasi Login Admin / Petugas
+ * Perpustakaan NETRI - API Autentikasi Login Admin / Petugas
  * Standar Keamanan: Argon2id, lockout progresif, anti user-enumeration, cookie HttpOnly.
  */
 

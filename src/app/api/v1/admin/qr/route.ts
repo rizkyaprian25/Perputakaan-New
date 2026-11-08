@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pembangkitan Kode QR untuk Dicetak (Label Buku & Kartu Anggota)
+ * Perpustakaan NETRI - API Pembangkitan Kode QR untuk Dicetak (Label Buku & Kartu Anggota)
  */
 
 import { NextRequest, NextResponse } from "next/server";

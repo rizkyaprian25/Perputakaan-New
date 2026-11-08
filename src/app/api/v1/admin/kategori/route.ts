@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Daftar Kategori Buku
+ * Perpustakaan NETRI - API Daftar Kategori Buku
  */
 
 import { NextRequest } from "next/server";

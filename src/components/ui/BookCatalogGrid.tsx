@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Grid Katalog Buku Interaktif (Publik)
+ * Perpustakaan NETRI - Grid Katalog Buku Interaktif (Publik)
  * Menampilkan daftar kartu buku yang saat diklik membuka Modal Detail Buku
  * lengkap dengan sampul, ISBN, penerbit, tahun terbit, lokasi rak, sinopsis, dan ketersediaan.
  */
@@ -43,7 +43,7 @@ export function BookCatalogGrid({ items }: BookCatalogGridProps) {
             key={item.id}
             type="button"
             onClick={() => setSelectedBook(item)}
-            className="text-left flex flex-col gap-2.5 p-3.5 rounded-lg bg-surface border border-line/80 hover:border-ink/40 hover:shadow-md transition-all group cursor-pointer"
+            className="text-left flex flex-col gap-2.5 p-3.5 rounded-xl bg-surface border border-line/80 hover:border-ink/40 hover-lift group cursor-pointer"
           >
             <BookCover
               judul={item.judul}

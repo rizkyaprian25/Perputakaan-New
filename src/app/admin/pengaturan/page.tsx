@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Halaman Pengaturan Sistem Perpustakaan & Manajemen Staf
+ * Perpustakaan NETRI - Halaman Pengaturan Sistem Perpustakaan & Manajemen Staf
  * 1. Aturan operasional peminjaman, batas denda keterlambatan, dan kuota buku.
  * 2. Ubah kata sandi akun yang sedang aktif.
  * 3. Manajemen akun petugas piket (tambah akun staf & status aktif).
@@ -17,7 +17,7 @@ export default function AdminPengaturanPage() {
   const [lamaPinjamHari, setLamaPinjamHari] = useState(7);
   const [maksBukuPerAnggota, setMaksBukuPerAnggota] = useState(3);
   const [dendaPerHariRp, setDendaPerHariRp] = useState(1000);
-  const [namaPerpustakaan, setNamaPerpustakaan] = useState("Perpustakaan Bilik Baca");
+  const [namaPerpustakaan, setNamaPerpustakaan] = useState("Perpustakaan NETRI");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 

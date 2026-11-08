@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Sistem Cetak Kartu Anggota QR Siswa (Per-Siswa & Cetak Massal A4 Per Kelas)
+ * Perpustakaan NETRI - Sistem Cetak Kartu Anggota QR Siswa (Per-Siswa & Cetak Massal A4 Per Kelas)
  * Dirancang dengan ukuran presisi standar ISO ID-1 (86mm x 54mm),
  * 2 kolom x 4 baris (8 kartu per lembar A4), bebas 100% dari elemen navigasi web.
  */
@@ -395,11 +395,11 @@ function CetakKartuSiswaContent() {
                   >
                     <div className="flex items-center gap-[2mm]">
                       <div className="w-[6mm] h-[6mm] rounded-xs bg-white text-black flex items-center justify-center font-serif font-extrabold text-[8.5pt] leading-none shrink-0">
-                        B
+                        N
                       </div>
                       <div>
                         <span className="font-serif font-bold text-[8.5pt] uppercase tracking-wider block leading-none text-white">
-                          PERPUSTAKAAN BILIK BACA
+                          PERPUSTAKAAN NETRI
                         </span>
                         <span className="font-sans text-[5.5pt] uppercase tracking-widest text-neutral-300 block mt-[0.8mm] leading-none">
                           KARTU ANGGOTA RESMI • TA 2026/2027
@@ -479,7 +479,7 @@ function CetakKartuSiswaContent() {
                       Harap dibawa setiap berkunjung & meminjam koleksi buku
                     </span>
                     <span className="font-mono font-bold text-black uppercase">
-                      BILIK BACA ID
+                      NETRI LIBRARY ID
                     </span>
                   </div>
                 </div>

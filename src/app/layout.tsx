@@ -24,9 +24,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bilik Baca - Sistem Perpustakaan Sekolah",
+  title: "Perpustakaan NETRI — Sistem Katalog, Presensi & Sirkulasi Sekolah",
   description:
-    "Katalog buku sekolah, absensi kunjungan mandiri, dan sirkulasi peminjaman cepat untuk siswa dan guru.",
+    "Katalog buku pelajaran & literasi Perpustakaan NETRI, anjungan presensi mandiri siswa, dan workstation sirkulasi peminjaman cepat.",
   icons: {
     icon: "/favicon.ico",
   },

@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Transaksi Peminjaman Buku (Jalur Kritis Atomik)
+ * Perpustakaan NETRI - API Transaksi Peminjaman Buku (Jalur Kritis Atomik)
  * Menggunakan transaksi InnoDB MySQL dengan SELECT ... FOR UPDATE,
  * unique generated column aktif_eksemplar_id (anti race condition), dan audit log otomatis.
  */

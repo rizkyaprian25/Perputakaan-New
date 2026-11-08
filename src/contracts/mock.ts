@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Mock Data untuk Pengujian Kontrak (Mock & Fixture)
+ * Perpustakaan NETRI - Mock Data untuk Pengujian Kontrak (Mock & Fixture)
  * Digunakan untuk pengujian unit, visual preview, dan verifikasi SSOT tanpa koneksi DB hidup.
  */
 

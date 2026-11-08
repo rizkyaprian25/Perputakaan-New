@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Live Feed 5 Kedatangan Terakhir di Kiosk
+ * Perpustakaan NETRI - API Live Feed 5 Kedatangan Terakhir di Kiosk
  */
 
 import { NextRequest } from "next/server";

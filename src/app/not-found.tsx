@@ -12,7 +12,7 @@ export default function NotFound() {
         <h1 className="font-serif text-3xl font-semibold text-ink mb-2">Halaman Tidak Ditemukan</h1>
         <p className="text-ink-muted text-sm leading-relaxed mb-6">
           Buku atau halaman yang Anda cari mungkin telah dipindahkan, dihapus, atau belum terdaftar di
-          sistem katalog Bilik Baca.
+          sistem katalog Perpustakaan NETRI.
         </p>
         <Link
           href="/"

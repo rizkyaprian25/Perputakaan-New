@@ -36,7 +36,7 @@ export function BookCover({
         className
       )}
     >
-      {/* Lapisan Dasar: Sampul Pengganti Bertipografi Editorial (Khas Bilik Baca) */}
+      {/* Lapisan Dasar: Sampul Pengganti Bertipografi Editorial (Khas Perpustakaan NETRI) */}
       <div className="flex flex-col gap-1.5 z-10">
         <span className="font-mono text-[9px] tracking-widest uppercase opacity-85 px-1.5 py-0.5 rounded bg-black/20 w-fit">
           {isPelajaran ? "Buku Pelajaran" : "Buku Bacaan"}

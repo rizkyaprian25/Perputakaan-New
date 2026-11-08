@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Komponen Pemindai Kamera Webcam Live (QR & Barcode)
+ * Perpustakaan NETRI - Komponen Pemindai Kamera Webcam Live (QR & Barcode)
  * Memanfaatkan BarcodeDetector API bawaan browser modern dan stream video HTML5.
  * Dilengkapi feedback audio Web Audio API otomatis saat kode berhasil dibaca.
  */

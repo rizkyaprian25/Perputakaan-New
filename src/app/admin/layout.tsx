@@ -98,12 +98,12 @@ export default function AdminLayout({
         <div className="space-y-8">
           {/* Logo & Judul Panel Admin */}
           <Link href="/admin" className="flex items-center gap-3 pb-6 border-b border-line group">
-            <div className="w-9 h-9 rounded-md bg-ink text-paper flex items-center justify-center font-serif font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
-              B
+            <div className="w-9 h-9 rounded-lg bg-ink text-paper flex items-center justify-center font-serif font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
+              N
             </div>
             <div>
-              <span className="font-serif font-bold text-xl block leading-none text-ink">
-                Bilik Baca
+              <span className="font-serif font-bold text-lg block leading-none text-ink">
+                Perpustakaan NETRI
               </span>
               <span className="font-mono text-[10px] text-ink-muted uppercase tracking-widest block mt-1.5 font-medium">
                 Panel Staf & Admin
@@ -232,7 +232,7 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0 print:block print:w-full">
         <header className="bg-surface/90 backdrop-blur-sm border-b border-line px-8 py-3.5 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2.5 text-xs">
-            <span className="font-serif font-bold text-base text-ink tracking-tight">Bilik Baca</span>
+            <span className="font-serif font-bold text-base text-ink tracking-tight">Perpustakaan NETRI</span>
             <span className="text-ink-muted/50">/</span>
             <span className="font-sans text-xs text-ink-muted font-medium">Workstation Petugas</span>
           </div>

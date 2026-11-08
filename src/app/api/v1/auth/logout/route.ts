@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Logout Pengguna
+ * Perpustakaan NETRI - API Logout Pengguna
  * Menghapus record sesi di basis data dan membersihkan cookie peramban.
  */
 

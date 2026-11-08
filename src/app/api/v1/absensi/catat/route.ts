@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pencatatan Presensi Kiosk Mandiri
+ * Perpustakaan NETRI - API Pencatatan Presensi Kiosk Mandiri
  * Mendukung scan QR kartu siswa/guru dan input manual NIS/NIP.
  * Idempoten: Tidak membuat baris ganda jika siswa scan berulang kali dalam 1 hari.
  */

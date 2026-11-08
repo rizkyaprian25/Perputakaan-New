@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Transaksi Pengembalian Buku
+ * Perpustakaan NETRI - API Transaksi Pengembalian Buku
  * Mengubah status eksemplar menjadi 'tersedia' dan mencatat waktu pengembalian.
  */
 

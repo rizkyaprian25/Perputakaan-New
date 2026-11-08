@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pemeriksaan Sesi Pengguna Aktif
+ * Perpustakaan NETRI - API Pemeriksaan Sesi Pengguna Aktif
  */
 
 import { NextRequest } from "next/server";

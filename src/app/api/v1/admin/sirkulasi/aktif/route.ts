@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Daftar Peminjaman Aktif & Pemantauan Keterlambatan
+ * Perpustakaan NETRI - API Daftar Peminjaman Aktif & Pemantauan Keterlambatan
  * Mengambil seluruh transaksi buku yang sedang dipinjam (dikembalikan_pada IS NULL)
  * lengkap dengan perhitungan status terlambat dan estimasi denda.
  */

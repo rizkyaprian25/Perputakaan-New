@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Workstation Meja Sirkulasi Komputer
+ * Perpustakaan NETRI - Workstation Meja Sirkulasi Komputer
  * Mencakup Peminjaman Baru (Scan QR/NIS + Struk Bukti), Pengembalian Cepat,
  * dan Tabel Pemantauan Pinjaman Aktif & Keterlambatan (Perpanjang +7 Hari / Kembalikan).
  */
@@ -972,7 +972,7 @@ export default function SirkulasiWorkstationPage() {
                 {/* Header Struk Resmi */}
                 <div className="text-center border-b border-black pb-2 space-y-0.5">
                   <div className="font-serif font-bold text-sm text-black tracking-tight uppercase">
-                    Perpustakaan Bilik Baca
+                    Perpustakaan NETRI
                   </div>
                   <div className="text-[10px] text-gray-700">
                     SLIP BUKTI PEMINJAMAN KOLEKSI
@@ -1035,7 +1035,7 @@ export default function SirkulasiWorkstationPage() {
                     <p className="text-gray-600">Petugas Jaga,</p>
                     <div className="h-10 print:h-8" />
                     <p className="font-bold border-t border-black/60 pt-0.5">
-                      Bilik Baca
+                      Perpustakaan NETRI
                     </p>
                   </div>
                 </div>

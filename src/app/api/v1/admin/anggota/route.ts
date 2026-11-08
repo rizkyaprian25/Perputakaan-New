@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Manajemen Anggota (Siswa & Guru)
+ * Perpustakaan NETRI - API Manajemen Anggota (Siswa & Guru)
  * Menambah anggota baru secara manual dan membangkitkan token QR unik.
  */
 

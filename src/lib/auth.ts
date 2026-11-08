@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Layanan Autentikasi & Pengelolaan Sesi (Server-Side Opaque Token)
+ * Perpustakaan NETRI - Layanan Autentikasi & Pengelolaan Sesi (Server-Side Opaque Token)
  * Standar Keamanan 4: Argon2id, token acak CSPRNG 256-bit, hash SHA-256 tersimpan di DB.
  */
 

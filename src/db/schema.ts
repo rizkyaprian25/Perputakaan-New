@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Skema Database Relasional (Drizzle ORM MySQL)
+ * Perpustakaan NETRI - Skema Database Relasional (Drizzle ORM MySQL)
  * Mengikuti spesifikasi arsitektur PRD.md Seksi 7 dan 10 Standar Keamanan Aplikasi.
  */
 

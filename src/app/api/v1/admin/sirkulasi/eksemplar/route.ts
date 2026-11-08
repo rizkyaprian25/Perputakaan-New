@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pencarian Data Eksemplar Buku untuk Meja Sirkulasi
+ * Perpustakaan NETRI - API Pencarian Data Eksemplar Buku untuk Meja Sirkulasi
  */
 
 import { NextRequest } from "next/server";

@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pengaturan Sistem Perpustakaan
+ * Perpustakaan NETRI - API Pengaturan Sistem Perpustakaan
  * Mengambil dan memperbarui aturan operasional sirkulasi (lama pinjam, kuota buku, denda).
  */
 

@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Inferensi Tipe TypeScript (SSOT)
+ * Perpustakaan NETRI - Inferensi Tipe TypeScript (SSOT)
  * Seluruh tipe data aplikasi diturunkan langsung dari Zod Schema dan Konstanta.
  */
 

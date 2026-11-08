@@ -1,87 +1,98 @@
 /**
- * Bilik Baca - API Rincian Buku, Edit, Hapus (Soft-Delete), dan Manajemen Eksemplar Fisik
+ * Perpustakaan NETRI - API Manajemen Koleksi Buku (Admin & Petugas)
+ * Mendukung penambahan judul baru, penyimpanan sampul, dan pembuatan N eksemplar fisik otomatis.
  */
 
 import { NextRequest } from "next/server";
-import { pool } from "@/db";
-import {
-  BukuUpdateSkema,
-  EksemplarTambahSkema,
-  EksemplarUbahStatusSkema,
-} from "@/contracts/skema";
+import { db, pool } from "@/db";
+import { buku, eksemplar, kategori } from "@/db/schema";
+import { eq, sql, desc } from "drizzle-orm";
+import { BukuBaruSkema } from "@/contracts/skema";
 import { responSukses, responGalat } from "@/lib/api-response";
 import { verifikasiAkses } from "@/lib/auth";
 import { ulid } from "ulid";
 
 export const dynamic = "force-dynamic";
 
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
-
-// 1. Ambil Rincian Buku beserta Seluruh Daftar Eksemplar Fisiknya
-export async function GET(req: NextRequest, context: RouteContext) {
+export async function GET(req: NextRequest) {
   const auth = await verifikasiAkses(["admin", "petugas"]);
   if (!auth.diizinkan) {
     return responGalat(auth.pesan || "Akses ditolak", auth.status || 401);
   }
 
-  const { id } = await context.params;
-  const connection = await pool.getConnection();
+  const { searchParams } = new URL(req.url);
+  const q = searchParams.get("q") || "";
+  const mode = searchParams.get("mode") || "";
 
-  try {
-    const [bukuRows]: any = await connection.query(
-      `SELECT b.id, b.isbn, b.judul, b.penulis, b.penerbit, b.tahun_terbit as tahunTerbit,
-              b.jumlah_halaman as jumlahHalaman, b.sinopsis, b.sampul_berkas as sampulUrl,
-              b.kategori_id as kategoriId, k.nama as kategoriNama, k.kelompok,
-              b.lokasi_rak as lokasiRak, b.sumber
-       FROM buku b
-       JOIN kategori k ON b.kategori_id = k.id
-       WHERE b.id = ? AND b.dihapus_pada IS NULL`,
-      [id]
-    );
-
-    if (!bukuRows || bukuRows.length === 0) {
-      return responGalat("Data buku tidak ditemukan", 404);
+  // Mode khusus: tarik seluruh eksemplar fisik lengkap beserta metadata bukunya untuk Cetak Stiker QR Massal
+  if (mode === "stiker_massal") {
+    const connection = await pool.getConnection();
+    try {
+      const [rows]: any = await connection.query(
+        `SELECT 
+           e.id as eksemplarId,
+           e.kode as kode,
+           e.status as status,
+           b.id as bukuId,
+           b.judul as judul,
+           b.penulis as penulis,
+           b.isbn as isbn,
+           b.lokasi_rak as lokasiRak,
+           k.nama as kategoriNama,
+           k.kelompok as kelompok
+         FROM eksemplar e
+         INNER JOIN buku b ON e.buku_id = b.id
+         INNER JOIN kategori k ON b.kategori_id = k.id
+         WHERE b.dihapus_pada IS NULL
+         ORDER BY b.dibuat_pada DESC, e.kode ASC`
+      );
+      return responSukses(rows, "Daftar seluruh eksemplar stiker berhasil diambil");
+    } finally {
+      connection.release();
     }
-
-    const [eksemplarRows]: any = await connection.query(
-      `SELECT e.id, e.kode, e.status, e.dibuat_pada as dibuatPada,
-              p.id as peminjamanId, p.jatuh_tempo as jatuhTempo,
-              a.nama as peminjamNama, a.nomor_induk as peminjamNis, a.kelas as peminjamKelas
-       FROM eksemplar e
-       LEFT JOIN peminjaman p ON e.id = p.eksemplar_id AND p.dikembalikan_pada IS NULL
-       LEFT JOIN anggota a ON p.anggota_id = a.id
-       WHERE e.buku_id = ?
-       ORDER BY e.kode ASC`,
-      [id]
-    );
-
-    return responSukses(
-      {
-        buku: bukuRows[0],
-        eksemplar: eksemplarRows,
-      },
-      "Rincian buku dan eksemplar berhasil dimuat"
-    );
-  } catch (error) {
-    console.error("Gagal memuat rincian buku:", error);
-    return responGalat("Terjadi kesalahan saat memuat rincian buku", 500);
-  } finally {
-    connection.release();
   }
+
+  const dataBuku = await db
+    .select({
+      id: buku.id,
+      isbn: buku.isbn,
+      judul: buku.judul,
+      penulis: buku.penulis,
+      penerbit: buku.penerbit,
+      tahunTerbit: buku.tahunTerbit,
+      jumlahHalaman: buku.jumlahHalaman,
+      sinopsis: buku.sinopsis,
+      sampulUrl: buku.sampulBerkas,
+      kategoriId: buku.kategoriId,
+      kategoriNama: kategori.nama,
+      kelompok: kategori.kelompok,
+      lokasiRak: buku.lokasiRak,
+      sumber: buku.sumber,
+      totalEksemplar: sql<number>`count(${eksemplar.id})`,
+      tersediaEksemplar: sql<number>`sum(case when ${eksemplar.status} = 'tersedia' then 1 else 0 end)`,
+    })
+    .from(buku)
+    .innerJoin(kategori, eq(buku.kategoriId, kategori.id))
+    .leftJoin(eksemplar, eq(buku.id, eksemplar.bukuId))
+    .where(
+      q
+        ? sql`${buku.dihapusPada} IS NULL AND (${buku.judul} LIKE ${`%${q}%`} OR ${buku.penulis} LIKE ${`%${q}%`} OR ${buku.isbn} LIKE ${`%${q}%`})`
+        : sql`${buku.dihapusPada} IS NULL`
+    )
+    .groupBy(buku.id, kategori.nama, kategori.kelompok)
+    .orderBy(desc(buku.dibuatPada));
+
+  return responSukses(dataBuku, "Daftar buku berhasil diambil");
 }
 
-// 2. Edit / Perbarui Metadata Buku
-export async function PUT(req: NextRequest, context: RouteContext) {
+export async function POST(req: NextRequest) {
   const auth = await verifikasiAkses(["admin", "petugas"]);
   if (!auth.diizinkan || !auth.user) {
     return responGalat(auth.pesan || "Akses ditolak", auth.status || 401);
   }
 
-  const { id } = await context.params;
   const json = await req.json();
-  const parse = BukuUpdateSkema.safeParse(json);
+  const parse = BukuBaruSkema.safeParse(json);
 
   if (!parse.success) {
     return responGalat(parse.error.errors[0]?.message || "Data buku tidak valid", 400);
@@ -93,228 +104,82 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   try {
     await connection.beginTransaction();
 
-    const [cekRows]: any = await connection.query(
-      "SELECT id, judul FROM buku WHERE id = ? AND dihapus_pada IS NULL FOR UPDATE",
-      [id]
-    );
+    const bukuId = ulid();
 
-    if (!cekRows || cekRows.length === 0) {
-      await connection.rollback();
-      return responGalat("Buku tidak ditemukan", 404);
-    }
-
+    // 1. Simpan Judul Buku beserta Sampul
     await connection.query(
-      `UPDATE buku
-       SET isbn = ?, judul = ?, penulis = ?, penerbit = ?, tahun_terbit = ?,
-           jumlah_halaman = ?, kategori_id = ?, sinopsis = ?, sampul_berkas = ?,
-           lokasi_rak = ?, diperbarui_pada = NOW()
-       WHERE id = ?`,
+      `INSERT INTO buku 
+       (id, isbn, judul, penulis, penerbit, tahun_terbit, jumlah_halaman, sinopsis, sampul_berkas, kategori_id, lokasi_rak, sumber, id_sumber) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        bukuId,
         data.isbn || null,
         data.judul,
         data.penulis,
         data.penerbit || null,
         data.tahunTerbit || null,
         data.jumlahHalaman || null,
-        data.kategoriId,
         data.sinopsis || null,
         data.sampulUrl || null,
+        data.kategoriId,
         data.lokasiRak || null,
-        id,
+        data.sumber,
+        data.idSumberEksternal || null,
       ]
     );
 
+    // 2. Bangkitkan N Eksemplar Fisik Berurutan (Aman dari duplikasi nomor urut)
+    const [maxRows]: any = await connection.query(
+      "SELECT COALESCE(MAX(CAST(SUBSTRING(kode, 4) AS UNSIGNED)), 0) as max_num FROM eksemplar WHERE kode REGEXP '^BB-[0-9]+$' FOR UPDATE"
+    );
+    let counter = Number(maxRows[0]?.max_num || 0) + 1;
+
+    const daftarKodeEksemplar: Array<{ id: string; kode: string }> = [];
+
+    for (let i = 0; i < data.jumlahEksemplar; i++) {
+      const eksemplarId = ulid();
+      const kodeStr = String(counter).padStart(6, "0");
+      const kode = `BB-${kodeStr}`;
+      counter++;
+
+      await connection.query(
+        "INSERT INTO eksemplar (id, buku_id, kode, status) VALUES (?, ?, ?, 'tersedia')",
+        [eksemplarId, bukuId, kode]
+      );
+      daftarKodeEksemplar.push({ id: eksemplarId, kode });
+    }
+
+    // 3. Catat log audit
     await connection.query(
       `INSERT INTO log_audit (waktu, aktor_id, ip_anonim, aksi, objek_tipe, objek_id, hasil, meta)
-       VALUES (NOW(), ?, '127.0.0.1', 'BUKU_EDIT', 'buku', ?, 'sukses', ?)`,
-      [auth.user.id, id, JSON.stringify({ judul: data.judul, penulis: data.penulis })]
+       VALUES (NOW(), ?, '127.0.0.1', 'BUKU_TAMBAH_BARU', 'buku', ?, 'sukses', ?)`,
+      [
+        auth.user.id,
+        bukuId,
+        JSON.stringify({
+          judul: data.judul,
+          penulis: data.penulis,
+          jumlahEksemplar: data.jumlahEksemplar,
+          daftarKodeEksemplar: daftarKodeEksemplar.map((e) => e.kode),
+        }),
+      ]
     );
 
     await connection.commit();
-    return responSukses({ id, judul: data.judul }, `Data buku '${data.judul}' berhasil diperbarui.`);
+
+    return responSukses(
+      {
+        bukuId,
+        judul: data.judul,
+        jumlahEksemplar: data.jumlahEksemplar,
+        daftarKodeEksemplar,
+      },
+      `Buku '${data.judul}' dan ${data.jumlahEksemplar} eksemplar fisik berhasil didaftarkan.`
+    );
   } catch (error) {
     await connection.rollback();
-    console.error("Gagal memperbarui buku:", error);
-    return responGalat("Terjadi kesalahan saat menyimpan perubahan buku", 500);
-  } finally {
-    connection.release();
-  }
-}
-
-// 3. Tambah Eksemplar Baru atau Ubah Status Eksemplar
-export async function POST(req: NextRequest, context: RouteContext) {
-  const auth = await verifikasiAkses(["admin", "petugas"]);
-  if (!auth.diizinkan || !auth.user) {
-    return responGalat(auth.pesan || "Akses ditolak", auth.status || 401);
-  }
-
-  const { id } = await context.params;
-  const json = await req.json();
-  const connection = await pool.getConnection();
-
-  try {
-    await connection.beginTransaction();
-
-    // Cabang A: Tambah N Eksemplar Baru untuk Buku Ini
-    if (json.aksi === "tambah_eksemplar") {
-      const parse = EksemplarTambahSkema.safeParse(json);
-      if (!parse.success) {
-        await connection.rollback();
-        return responGalat(parse.error.errors[0]?.message || "Jumlah eksemplar tidak valid", 400);
-      }
-
-      const [bukuRows]: any = await connection.query(
-        "SELECT id, judul FROM buku WHERE id = ? AND dihapus_pada IS NULL FOR UPDATE",
-        [id]
-      );
-      if (!bukuRows || bukuRows.length === 0) {
-        await connection.rollback();
-        return responGalat("Buku tidak ditemukan", 404);
-      }
-
-      const [maxRows]: any = await connection.query(
-        "SELECT COALESCE(MAX(CAST(SUBSTRING(kode, 4) AS UNSIGNED)), 0) as max_num FROM eksemplar WHERE kode REGEXP '^BB-[0-9]+$' FOR UPDATE"
-      );
-      let counter = Number(maxRows[0]?.max_num || 0) + 1;
-      const kodeBaru: string[] = [];
-
-      for (let i = 0; i < parse.data.jumlah; i++) {
-        const eksId = ulid();
-        const kode = `BB-${String(counter).padStart(6, "0")}`;
-        counter++;
-        await connection.query(
-          "INSERT INTO eksemplar (id, buku_id, kode, status) VALUES (?, ?, ?, 'tersedia')",
-          [eksId, id, kode]
-        );
-        kodeBaru.push(kode);
-      }
-
-      await connection.query(
-        `INSERT INTO log_audit (waktu, aktor_id, ip_anonim, aksi, objek_tipe, objek_id, hasil, meta)
-         VALUES (NOW(), ?, '127.0.0.1', 'EKSEMPLAR_TAMBAH', 'buku', ?, 'sukses', ?)`,
-        [auth.user.id, id, JSON.stringify({ jumlah: parse.data.jumlah, kodeBaru })]
-      );
-
-      await connection.commit();
-      return responSukses(
-        { kodeBaru },
-        `${parse.data.jumlah} eksemplar baru (${kodeBaru.join(", ")}) berhasil ditambahkan.`
-      );
-    }
-
-    // Cabang B: Ubah Status Kondisi Fisik Eksemplar
-    if (json.aksi === "ubah_status") {
-      const parse = EksemplarUbahStatusSkema.safeParse(json);
-      if (!parse.success) {
-        await connection.rollback();
-        return responGalat(parse.error.errors[0]?.message || "Parameter status tidak valid", 400);
-      }
-
-      const [eksRows]: any = await connection.query(
-        "SELECT id, kode, status FROM eksemplar WHERE id = ? AND buku_id = ? FOR UPDATE",
-        [parse.data.eksemplarId, id]
-      );
-
-      if (!eksRows || eksRows.length === 0) {
-        await connection.rollback();
-        return responGalat("Eksemplar tidak ditemukan", 404);
-      }
-
-      if (eksRows[0].status === "dipinjam") {
-        await connection.rollback();
-        return responGalat(
-          `Eksemplar ${eksRows[0].kode} sedang dipinjam siswa. Kembalikan terlebih dahulu di Meja Sirkulasi.`,
-          422
-        );
-      }
-
-      await connection.query(
-        "UPDATE eksemplar SET status = ?, diperbarui_pada = NOW() WHERE id = ?",
-        [parse.data.status, parse.data.eksemplarId]
-      );
-
-      await connection.query(
-        `INSERT INTO log_audit (waktu, aktor_id, ip_anonim, aksi, objek_tipe, objek_id, hasil, meta)
-         VALUES (NOW(), ?, '127.0.0.1', 'EKSEMPLAR_UBAH_STATUS', 'eksemplar', ?, 'sukses', ?)`,
-        [
-          auth.user.id,
-          parse.data.eksemplarId,
-          JSON.stringify({ kode: eksRows[0].kode, statusBaru: parse.data.status }),
-        ]
-      );
-
-      await connection.commit();
-      return responSukses(
-        { kode: eksRows[0].kode, status: parse.data.status },
-        `Status eksemplar ${eksRows[0].kode} berhasil diubah menjadi '${parse.data.status}'.`
-      );
-    }
-
-    await connection.rollback();
-    return responGalat("Aksi tidak dikenali", 400);
-  } catch (error) {
-    await connection.rollback();
-    console.error("Gagal memproses aksi eksemplar:", error);
-    return responGalat("Terjadi kesalahan saat memproses eksemplar", 500);
-  } finally {
-    connection.release();
-  }
-}
-
-// 4. Hapus Buku (Soft-Delete dengan proteksi pinjaman aktif)
-export async function DELETE(req: NextRequest, context: RouteContext) {
-  const auth = await verifikasiAkses(["admin", "petugas"]);
-  if (!auth.diizinkan || !auth.user) {
-    return responGalat(auth.pesan || "Akses ditolak", auth.status || 401);
-  }
-
-  const { id } = await context.params;
-  const connection = await pool.getConnection();
-
-  try {
-    await connection.beginTransaction();
-
-    const [bukuRows]: any = await connection.query(
-      "SELECT id, judul FROM buku WHERE id = ? AND dihapus_pada IS NULL FOR UPDATE",
-      [id]
-    );
-
-    if (!bukuRows || bukuRows.length === 0) {
-      await connection.rollback();
-      return responGalat("Buku tidak ditemukan", 404);
-    }
-
-    // Pastikan tidak ada eksemplar buku ini yang sedang dipinjam
-    const [pinjamAktif]: any = await connection.query(
-      "SELECT COUNT(*) as sedangDipinjam FROM eksemplar WHERE buku_id = ? AND status = 'dipinjam'",
-      [id]
-    );
-
-    if (Number(pinjamAktif[0]?.sedangDipinjam || 0) > 0) {
-      await connection.rollback();
-      return responGalat(
-        "Buku tidak dapat dihapus karena masih ada eksemplar yang sedang dipinjam oleh siswa.",
-        422
-      );
-    }
-
-    await connection.query(
-      "UPDATE buku SET dihapus_pada = NOW(), diperbarui_pada = NOW() WHERE id = ?",
-      [id]
-    );
-
-    await connection.query(
-      `INSERT INTO log_audit (waktu, aktor_id, ip_anonim, aksi, objek_tipe, objek_id, hasil, meta)
-       VALUES (NOW(), ?, '127.0.0.1', 'BUKU_HAPUS', 'buku', ?, 'sukses', ?)`,
-      [auth.user.id, id, JSON.stringify({ judul: bukuRows[0].judul })]
-    );
-
-    await connection.commit();
-    return responSukses({ id }, `Buku '${bukuRows[0].judul}' telah dihapus dari katalog aktif.`);
-  } catch (error) {
-    await connection.rollback();
-    console.error("Gagal menghapus buku:", error);
-    return responGalat("Terjadi kesalahan saat menghapus buku", 500);
+    console.error("Gagal menyimpan buku baru:", error);
+    return responGalat("Terjadi kendala saat menyimpan buku ke database", 500);
   } finally {
     connection.release();
   }

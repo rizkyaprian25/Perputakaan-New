@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pencarian Buku Eksternal (Multi-Source Server-Side Proxy)
+ * Perpustakaan NETRI - API Pencarian Buku Eksternal (Multi-Source Server-Side Proxy)
  * Sumber Data Resmi Terintegrasi:
  * 1. SIBI Kemendikbudristek (Katalog Buku Teks Pelajaran Kurikulum Merdeka & K13 Resmi)
  * 2. Buku Indonesia Open API (Katalog Buku Indonesia Berbasis ISBN)

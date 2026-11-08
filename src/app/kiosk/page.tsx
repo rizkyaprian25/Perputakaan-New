@@ -37,6 +37,40 @@ export default function KioskPage() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Micro-Interaksi: Efek Suara Chime Lembut (Web Audio API murni tanpa file eksternal)
+  const mainkanNadaUmpanBalik = (jenis: "sukses" | "galat") => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (jenis === "sukses") {
+        // Nada ganda naik harmonis (C5 -> E5)
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.35);
+      } else {
+        // Nada peringatan lembut rendah
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(220, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.25);
+      }
+    } catch {
+      // Abaikan jika browser memblokir autoplay audio
+    }
+  };
+
   // Ambil data live feed kunjungan hari ini dari server
   const muatFeedTerakhir = async () => {
     try {
@@ -108,6 +142,7 @@ export default function KioskPage() {
       }
 
       const hasil = json.data;
+      mainkanNadaUmpanBalik("sukses");
 
       // Tampilkan Layar Sukses Penuh selama 2 detik
       setSuksesState({
@@ -131,6 +166,7 @@ export default function KioskPage() {
         });
       }, 2000);
     } catch (err: unknown) {
+      mainkanNadaUmpanBalik("galat");
       const msg = err instanceof Error ? err.message : "Gagal mencatat presensi siswa";
       setErrorMsg(msg);
     } finally {
@@ -164,7 +200,7 @@ export default function KioskPage() {
           </p>
           <div className="flex items-center gap-2 mt-10 text-white/90 font-serif italic text-2xl">
             <Sparkles className="w-6 h-6" />
-            <span>Selamat datang di Bilik Baca. Selamat belajar & membaca!</span>
+            <span>Selamat datang di Perpustakaan NETRI. Selamat belajar & membaca!</span>
           </div>
         </div>
       )}
@@ -231,12 +267,14 @@ export default function KioskPage() {
               />
             ) : (
               <div className="relative border-2 border-dashed border-ink/30 rounded-xl p-8 bg-paper/60 flex flex-col items-center justify-center text-center overflow-hidden min-h-[220px]">
-                <QrCode className="w-16 h-16 text-ink/40 stroke-1 mb-3" />
+                <div className="w-16 h-16 rounded-2xl bg-surface border border-line flex items-center justify-center mb-3 scanner-pulse-ring">
+                  <QrCode className="w-9 h-9 text-group-pelajaran stroke-[1.75]" />
+                </div>
                 <span className="font-serif font-semibold text-lg text-ink">
-                  Arahkan Kartu QR Siswa ke Pemindai USB
+                  Arahkan Kartu Anggota Perpustakaan NETRI ke Pemindai USB
                 </span>
                 <span className="font-mono text-xs text-ink-muted mt-1">
-                  atau klik tombol &ldquo;Buka Kamera Webcam&rdquo; di atas
+                  atau klik tombol &ldquo;Buka Kamera Webcam&rdquo; di atas • Nada Konfirmasi Aktif
                 </span>
 
                 {/* Garis Laser Animasi Pemindai */}

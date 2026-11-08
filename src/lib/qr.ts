@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Helper Pembangkitan Kode QR (SVG & DataURL)
+ * Perpustakaan NETRI - Helper Pembangkitan Kode QR (SVG & DataURL)
  * Menghasilkan representasi visual untuk dicetak pada kartu anggota dan label eksemplar buku.
  */
 

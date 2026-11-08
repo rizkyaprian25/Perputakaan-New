@@ -842,7 +842,7 @@ export default function AdminBukuPage() {
                       className="w-full px-2.5 py-1.5 rounded border border-line text-xs focus:border-ink"
                     />
                     <p className="text-[10px] text-ink-muted mt-1">
-                      Kosongkan untuk menggunakan sampul tipografi otomatis khas Bilik Baca.
+                      Kosongkan untuk menggunakan sampul tipografi otomatis khas Perpustakaan NETRI.
                     </p>
                   </div>
                 </div>
@@ -1133,7 +1133,7 @@ export default function AdminBukuPage() {
                         style={{ height: "5.5mm" }}
                       >
                         <span className="font-sans font-bold text-[7pt] tracking-wider uppercase leading-none">
-                          BILIK BACA
+                          PERPUSTAKAAN NETRI
                         </span>
                         <span className="font-mono font-bold text-[7pt] tracking-tight uppercase leading-none">
                           RAK: {detailBukuAktif.lokasiRak || "UMUM"}

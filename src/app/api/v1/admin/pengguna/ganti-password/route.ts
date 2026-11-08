@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Ganti Kata Sandi Akun Pengguna Aktif
+ * Perpustakaan NETRI - API Ganti Kata Sandi Akun Pengguna Aktif
  * Memverifikasi kata sandi lama via Argon2id dan menyimpan hash baru yang aman.
  */
 

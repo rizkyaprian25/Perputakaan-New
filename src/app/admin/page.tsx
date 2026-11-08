@@ -103,7 +103,7 @@ export default async function AdminDashboardPage() {
       {/* Judul Halaman */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-5">
         <div>
-          <h1 className="font-serif text-3xl font-semibold text-ink">Ringkasan Perpustakaan</h1>
+          <h1 className="font-serif text-3xl font-semibold text-ink">Ringkasan Perpustakaan NETRI</h1>
           <p className="text-sm text-ink-muted mt-0.5">
             Ikhtisar operasional koleksi, kehadiran siswa, dan sirkulasi hari ini.
           </p>
@@ -129,7 +129,7 @@ export default async function AdminDashboardPage() {
       {/* Grid Metrik Angka Tabular */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Total Koleksi Buku */}
-        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2 hover-lift">
           <div className="flex items-center justify-between text-ink-muted">
             <span className="text-xs font-medium">Judul Koleksi</span>
             <BookOpen className="w-4 h-4" />
@@ -143,7 +143,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Anggota Aktif */}
-        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2 hover-lift">
           <div className="flex items-center justify-between text-ink-muted">
             <span className="text-xs font-medium">Anggota Aktif</span>
             <Users className="w-4 h-4" />
@@ -155,7 +155,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Buku Sedang Dipinjam */}
-        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2 hover-lift">
           <div className="flex items-center justify-between text-ink-muted">
             <span className="text-xs font-medium">Sedang Dipinjam</span>
             <Clock className="w-4 h-4 text-status-dipinjam" />
@@ -167,7 +167,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* Kunjungan Hari Ini */}
-        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-surface border border-line rounded-xl p-5 shadow-sm space-y-2 hover-lift">
           <div className="flex items-center justify-between text-ink-muted">
             <span className="text-xs font-medium">Kunjungan Hari Ini</span>
             <Users className="w-4 h-4 text-status-tersedia" />

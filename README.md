@@ -1,6 +1,6 @@
-# Bilik Baca
+# Perpustakaan NETRI
 
-Sistem informasi dan manajemen perpustakaan sekolah yang dirancang untuk kebutuhan operasional harian: katalog publik ramah siswa, kiosk presensi mandiri berbasis QR code, meja sirkulasi cepat untuk staf, serta integrasi sinkronisasi data siswa dari Netri SMS.
+Sistem informasi dan manajemen perpustakaan sekolah **Perpustakaan NETRI** yang dirancang untuk kebutuhan operasional harian: katalog publik ramah siswa, kiosk presensi mandiri berbasis QR code dengan konfirmasi audio chime, meja sirkulasi cepat untuk staf, serta integrasi sinkronisasi data siswa dari Netri SMS.
 
 ---
 
@@ -123,4 +123,4 @@ src/app/
 
 ## Lisensi
 
-Hak Cipta © 2026 Perpustakaan Sekolah Bilik Baca. Dilisensikan untuk penggunaan institusi pendidikan.
+Hak Cipta © 2026 Perpustakaan NETRI. Dilisensikan untuk penggunaan institusi pendidikan.

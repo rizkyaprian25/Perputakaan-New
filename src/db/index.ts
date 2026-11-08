@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Koneksi Basis Data MySQL Drizzle ORM
+ * Perpustakaan NETRI - Koneksi Basis Data MySQL Drizzle ORM
  * Menggunakan pool koneksi mysql2 dengan prepared statement terparameterisasi (Anti-SQLi).
  */
 

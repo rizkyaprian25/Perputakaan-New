@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Pencarian Profil Anggota untuk Meja Sirkulasi
+ * Perpustakaan NETRI - API Pencarian Profil Anggota untuk Meja Sirkulasi
  */
 
 import { NextRequest } from "next/server";

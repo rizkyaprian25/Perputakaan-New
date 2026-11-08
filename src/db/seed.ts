@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Skrip Seed Basis Data Awal (Fase 1 Foundation)
+ * Perpustakaan NETRI - Skrip Seed Basis Data Awal (Fase 1 Foundation)
  * Menyiapkan kategori baku, pengaturan dasar, akun admin pertama, dan data contoh realistis.
  */
 
@@ -10,7 +10,7 @@ import * as argon2 from "@node-rs/argon2";
 import { eq } from "drizzle-orm";
 
 async function main() {
-  console.log("🌱 Memulai seeding basis data Bilik Baca...");
+  console.log("🌱 Memulai seeding basis data Perpustakaan NETRI...");
 
   // 1. Kategori Baku (Hiburan vs Pelajaran)
   console.log("-> Seeding kategori buku...");
@@ -188,7 +188,7 @@ async function main() {
       .onDuplicateKeyUpdate({ set: { nama: ang.nama } });
   }
 
-  console.log("✅ Seeding basis data Bilik Baca selesai dengan sempurna!");
+  console.log("✅ Seeding basis data Perpustakaan NETRI selesai dengan sempurna!");
 }
 
 main()

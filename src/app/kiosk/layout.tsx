@@ -37,8 +37,8 @@ export default function KioskLayout({
 
       {/* Footer Kiosk Desktop */}
       <footer className="px-8 py-3.5 border-t border-line flex items-center justify-between text-xs text-ink-muted font-mono bg-paper-sunken/30 shrink-0">
-        <span>Bilik Baca Kiosk Presensi Siswa v1.0 • Mendukung Kamera & Pemindai Barcode USB</span>
-        <span>Arahkan kartu anggota ke kamera atau ketikkan NIS siswa</span>
+        <span>Perpustakaan NETRI • Anjungan Presensi Mandiri Siswa v2.0 • Mendukung Kamera & Pemindai Barcode USB</span>
+        <span>Arahkan kartu anggota Perpustakaan NETRI ke pemindai atau ketikkan NIS siswa</span>
       </footer>
     </div>
   );

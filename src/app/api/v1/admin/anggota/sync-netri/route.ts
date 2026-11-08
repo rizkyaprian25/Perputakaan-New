@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Sinkronisasi Siswa dari Netri SMS (Supabase Cloud)
+ * Perpustakaan NETRI - API Sinkronisasi Siswa dari Netri SMS (Supabase Cloud)
  * Menarik master data siswa dan kelas secara otomatis, memperbarui status siswa lulus/keluar,
  * dan membangkitkan kartu QR bagi siswa baru tanpa menghapus riwayat peminjaman lama.
  */

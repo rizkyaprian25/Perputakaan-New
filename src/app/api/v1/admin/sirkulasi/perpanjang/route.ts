@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Perpanjangan Masa Peminjaman Buku
+ * Perpustakaan NETRI - API Perpanjangan Masa Peminjaman Buku
  * Memperpanjang jatuh tempo peminjaman aktif sebanyak 1 kali (+lama_pinjam_hari)
  * selama buku belum melewati batas jatuh tempo.
  */

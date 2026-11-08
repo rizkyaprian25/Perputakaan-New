@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Kontrak Data & Single Source of Truth (SSOT)
+ * Perpustakaan NETRI - Kontrak Data & Single Source of Truth (SSOT)
  * Konstanta sistem, batasan bisnis, dan status enum baku.
  * Bahasa komentar: Bahasa Indonesia sesuai Master Engineering SOP.
  */

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Halaman Pusat Laporan & Ekspor Data Perpustakaan
+ * Perpustakaan NETRI - Halaman Pusat Laporan & Ekspor Data Perpustakaan
  * Menyediakan rekapan sirkulasi, data denda keterlambatan, rekapitulasi absensi per kelas,
  * peringkat 10 buku terpopuler & 10 siswa pembaca teraktif, serta ekspor CSV & cetak laporan resmi.
  */
@@ -255,7 +255,7 @@ export default function AdminLaporanPage() {
       {/* Kop Cetak Kedinasan Resmi (Hanya Muncul Saat window.print) */}
       <div className="hidden print:block border-b-4 border-double border-black pb-4 mb-6 text-center">
         <h2 className="font-serif font-extrabold text-2xl uppercase tracking-wider text-black">
-          PERPUSTAKAAN SEKOLAH &ldquo;BILIK BACA&rdquo;
+          PERPUSTAKAAN SEKOLAH &ldquo;NETRI&rdquo;
         </h2>
         <p className="text-xs text-black font-medium mt-0.5">
           Unit Pelaksana Teknis Pengelolaan Arsip, Koleksi Buku, dan Sirkulasi Siswa
@@ -561,7 +561,7 @@ export default function AdminLaporanPage() {
         </div>
         <div>
           <p className="text-gray-700">Penanggung Jawab,</p>
-          <p className="font-bold text-black">Kepala Perpustakaan Bilik Baca</p>
+          <p className="font-bold text-black">Kepala Perpustakaan NETRI</p>
           <div className="h-20" />
           <p className="font-bold border-b border-black inline-block min-w-[200px] text-black">
             (......................................................)

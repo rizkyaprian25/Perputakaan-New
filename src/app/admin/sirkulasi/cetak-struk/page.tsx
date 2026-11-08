@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Halaman Mandiri Cetak Struk Peminjaman Buku Perpustakaan
+ * Perpustakaan NETRI - Halaman Mandiri Cetak Struk Peminjaman Buku Perpustakaan
  * Bebas 100% dari background web, siap dicetak pada printer thermal 80mm / kertas A4.
  */
 
@@ -92,7 +92,7 @@ function CetakStrukContent() {
           {/* Header Struk Resmi */}
           <div className="text-center border-b border-black pb-2 space-y-0.5">
             <div className="font-serif font-bold text-sm text-black tracking-tight uppercase">
-              Perpustakaan Bilik Baca
+              Perpustakaan NETRI
             </div>
             <div className="font-sans text-[10px] text-gray-700 font-medium">
               SLIP BUKTI PEMINJAMAN KOLEKSI

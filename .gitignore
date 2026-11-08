@@ -51,3 +51,5 @@ Agents_Update/
 .agents/
 .gemini/
 .mcp.json
+design/
+*.pen

@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - Helper Standar Format Respons API
+ * Perpustakaan NETRI - Helper Standar Format Respons API
  * Mengikuti format ApiResponse<T> di contracts/skema.ts
  */
 

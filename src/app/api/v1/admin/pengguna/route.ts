@@ -1,5 +1,5 @@
 /**
- * Bilik Baca - API Manajemen Akun Petugas Perpustakaan
+ * Perpustakaan NETRI - API Manajemen Akun Petugas Perpustakaan
  * Menampilkan daftar staf, menambah akun baru, dan mengubah status aktif.
  */
 

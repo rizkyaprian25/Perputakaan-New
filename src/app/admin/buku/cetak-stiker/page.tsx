@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Bilik Baca - Sistem Cetak Stiker QR Buku (Per-Eksemplar, Per-Buku, & Cetak Massal A4)
+ * Perpustakaan NETRI - Sistem Cetak Stiker QR Buku (Per-Eksemplar, Per-Buku, & Cetak Massal A4)
  * Dirancang dengan presisi milimeter (3 kolom x 8 baris = 24 stiker per lembar A4)
  * serta bebas 100% dari elemen navigasi/katalog web saat dicetak.
  */
@@ -364,7 +364,7 @@ function CetakStikerBukuContent() {
                     style={{ height: "5.5mm" }}
                   >
                     <span className="font-sans font-bold text-[6.5pt] tracking-wider uppercase leading-none">
-                      BILIK BACA
+                      PERPUSTAKAAN NETRI
                     </span>
                     <span className="font-mono font-bold text-[6.5pt] tracking-tight uppercase leading-none">
                       RAK: {eks.lokasiRak || "UMUM"}
