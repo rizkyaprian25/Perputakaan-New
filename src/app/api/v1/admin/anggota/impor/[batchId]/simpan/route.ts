@@ -1,166 +1,102 @@
 /**
- * Perpustakaan NETRI - API Pratinjau Impor Data Anggota (Langkah 1)
- * Membaca berkas Excel/CSV, memvalidasi tiap baris dengan Zod, dan mendeteksi duplikasi.
- * BELUM menulis ke tabel anggota utama (aman dari kecelakaan data).
+ * Perpustakaan NETRI - API Simpan Impor Anggota Permanen (Langkah 2)
+ * Memindahkan baris tervalidasi dari batch pratinjau ke tabel anggota dalam satu transaksi atomik.
  */
 
 import { NextRequest } from "next/server";
-import readXlsxFile from "read-excel-file/node";
-import { db } from "@/db";
-import { anggota, imporBatch } from "@/db/schema";
-import { BarisImporAnggotaSkema } from "@/contracts/skema";
+import { pool, db } from "@/db";
+import { imporBatch } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { responSukses, responGalat } from "@/lib/api-response";
 import { verifikasiAkses } from "@/lib/auth";
 import { ulid } from "ulid";
-import { BATAS } from "@/contracts/konstanta";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ batchId: string }> }
+) {
   const auth = await verifikasiAkses(["admin"]);
   if (!auth.diizinkan || !auth.user) {
     return responGalat(auth.pesan || "Akses ditolak (Hanya Admin)", auth.status || 401);
   }
 
+  const { batchId } = await params;
+
+  // 1. Ambil data batch pratinjau
+  const batch = await db.query.imporBatch.findFirst({
+    where: eq(imporBatch.id, batchId),
+  });
+
+  if (!batch) {
+    return responGalat("Sesi pratinjau impor tidak ditemukan atau sudah kedaluwarsa.", 404);
+  }
+
+  if (batch.status !== "pratinjau") {
+    return responGalat(`Batch ini sudah berstatus '${batch.status}' dan tidak dapat diproses ulang.`, 400);
+  }
+
+  if (new Date(batch.kedaluwarsa) < new Date()) {
+    await db.update(imporBatch).set({ status: "kedaluwarsa" }).where(eq(imporBatch.id, batchId));
+    return responGalat("Sesi pratinjau impor telah kedaluwarsa (melebihi 30 menit). Unggah kembali berkas Anda.", 410);
+  }
+
+  const ringkasan: any = batch.ringkasan;
+  const dataValid: any[] = ringkasan.dataValid || [];
+
+  if (dataValid.length === 0) {
+    return responGalat("Tidak ada data valid yang dapat disimpan dari berkas ini.", 400);
+  }
+
+  const connection = await pool.getConnection();
+
   try {
-    const formData = await req.formData();
-    const file = formData.get("berkas") as File | null;
+    await connection.beginTransaction();
 
-    if (!file) {
-      return responGalat("Berkas Excel (.xlsx) atau CSV wajib diunggah", 400);
+    let jumlahTersimpan = 0;
+
+    for (const item of dataValid) {
+      const anggotaId = ulid();
+      const qrToken = crypto.randomBytes(16).toString("base64url");
+
+      await connection.query(
+        `INSERT INTO anggota (id, nomor_induk, nama, jenis, kelas, qr_token, status) 
+         VALUES (?, ?, ?, ?, ?, ?, 'aktif')`,
+        [anggotaId, item.nomorInduk, item.nama, item.jenis, item.kelas || null, qrToken]
+      );
+      jumlahTersimpan++;
     }
 
-    if (file.size > BATAS.UKURAN_IMPOR_BYTE) {
-      return responGalat("Ukuran berkas melebihi batas maksimal 2 MB", 400);
-    }
+    // Update status batch menjadi 'tersimpan'
+    await connection.query("UPDATE impor_batch SET status = 'tersimpan' WHERE id = ?", [batchId]);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    let rows: any[] = [];
+    // Catat log audit
+    await connection.query(
+      `INSERT INTO log_audit (waktu, aktor_id, ip_anonim, aksi, objek_tipe, objek_id, hasil, meta)
+       VALUES (NOW(), ?, '127.0.0.1', 'ANGGOTA_IMPOR_MASSAL_KOMIT', 'impor_batch', ?, 'sukses', ?)`,
+      [
+        auth.user.id,
+        batchId,
+        JSON.stringify({
+          batchId,
+          jumlahTersimpan,
+        }),
+      ]
+    );
 
-    try {
-      rows = await readXlsxFile(buffer);
-    } catch (parseErr) {
-      return responGalat("Format berkas tidak valid atau rusak. Pastikan berkas berformat .xlsx", 400);
-    }
-
-    if (!rows || rows.length <= 1) {
-      return responGalat("Berkas kosong atau hanya memuat baris judul (header)", 400);
-    }
-
-    // Baris pertama diasumsikan header: nomor_induk, nama, jenis, kelas
-    const dataRows = rows.slice(1);
-    if (dataRows.length > BATAS.BARIS_IMPOR_MAKS) {
-      return responGalat(`Jumlah baris melebihi batas maksimal ${BATAS.BARIS_IMPOR_MAKS} baris`, 400);
-    }
-
-    // Ambil semua nomor induk yang sudah ada di database untuk deteksi duplikat
-    const allDbMembers = await db.select({ nomorInduk: anggota.nomorInduk }).from(anggota);
-    const existingNisSet = new Set(allDbMembers.map((m) => m.nomorInduk.toLowerCase()));
-
-    const seenInFile = new Set<string>();
-    const dataValid: Array<{ nomorInduk: string; nama: string; jenis: "siswa" | "guru" | "staf"; kelas: string }> = [];
-    const daftarError: Array<{ baris: number; alasan: string; data: Record<string, unknown> }> = [];
-
-    let duplikatDalamFile = 0;
-    let duplikatDatabase = 0;
-
-    dataRows.forEach((row, index) => {
-      const nomorBaris = index + 2; // Baris riil di Excel (mulai dari 2)
-      const rawNis = String(row[0] || "").trim();
-      const rawNama = String(row[1] || "").trim();
-      let rawJenis = String(row[2] || "siswa").trim().toLowerCase();
-      const rawKelas = String(row[3] || "").trim();
-
-      if (!["siswa", "guru", "staf"].includes(rawJenis)) {
-        rawJenis = "siswa";
-      }
-
-      // Validasi baris dengan Zod
-      const parse = BarisImporAnggotaSkema.safeParse({
-        nomorInduk: rawNis,
-        nama: rawNama,
-        jenis: rawJenis,
-        kelas: rawKelas,
-      });
-
-      if (!parse.success) {
-        daftarError.push({
-          baris: nomorBaris,
-          alasan: parse.error.errors[0]?.message || "Format data tidak valid",
-          data: { nomorInduk: rawNis, nama: rawNama, jenis: rawJenis, kelas: rawKelas },
-        });
-        return;
-      }
-
-      const nisLower = rawNis.toLowerCase();
-
-      // Cek duplikasi di dalam file itu sendiri
-      if (seenInFile.has(nisLower)) {
-        duplikatDalamFile++;
-        daftarError.push({
-          baris: nomorBaris,
-          alasan: `Nomor induk '${rawNis}' duplikat di dalam berkas`,
-          data: { nomorInduk: rawNis, nama: rawNama },
-        });
-        return;
-      }
-      seenInFile.add(nisLower);
-
-      // Cek duplikasi terhadap basis data
-      if (existingNisSet.has(nisLower)) {
-        duplikatDatabase++;
-        daftarError.push({
-          baris: nomorBaris,
-          alasan: `Nomor induk '${rawNis}' sudah ada di database`,
-          data: { nomorInduk: rawNis, nama: rawNama },
-        });
-        return;
-      }
-
-      dataValid.push({
-        nomorInduk: rawNis,
-        nama: rawNama,
-        jenis: rawJenis as "siswa" | "guru" | "staf",
-        kelas: rawKelas,
-      });
-    });
-
-    // Simpan hasil pratinjau di tabel impor_batch (kedaluwarsa dalam 30 menit)
-    const batchId = ulid();
-    const kedaluwarsa = new Date(Date.now() + 30 * 60 * 1000);
-
-    const ringkasan = {
-      totalBaris: dataRows.length,
-      barisValid: dataValid.length,
-      barisBermasalah: daftarError.length,
-      duplikatDalamFile,
-      duplikatDatabase,
-      daftarError: daftarError.slice(0, 50), // Batasi 50 error pertama untuk payload
-      dataValid,
-    };
-
-    await db.insert(imporBatch).values({
-      id: batchId,
-      penggunaId: auth.user.id,
-      status: "pratinjau",
-      ringkasan,
-      kedaluwarsa,
-    });
+    await connection.commit();
 
     return responSukses(
-      {
-        batchId,
-        totalBaris: dataRows.length,
-        barisValid: dataValid.length,
-        barisBermasalah: daftarError.length,
-        duplikatDalamFile,
-        duplikatDatabase,
-        daftarError: ringkasan.daftarError,
-      },
-      "Pratinjau impor berhasil diproses. Silakan tinjau sebelum disimpan permanen."
+      { batchId, jumlahTersimpan },
+      `Berhasil menyimpan ${jumlahTersimpan} data anggota ke sistem perpustakaan.`
     );
   } catch (error) {
-    console.error("Gagal memproses pratinjau impor:", error);
-    return responGalat("Terjadi kendala saat membaca berkas impor", 500);
+    await connection.rollback();
+    console.error("Gagal menyimpan commit impor:", error);
+    return responGalat("Terjadi kesalahan sistem saat menyimpan data anggota ke basis data.", 500);
+  } finally {
+    connection.release();
   }
 }

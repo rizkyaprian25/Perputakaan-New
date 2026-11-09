@@ -69,14 +69,22 @@ export const BukuBaruSkema = z
       .max(BATAS.SINOPSIS_MAKS_KARAKTER, "Sinopsis melebihi batas 5.000 karakter")
       .optional()
       .or(z.literal("")),
-    sampulUrl: z.string().trim().max(255, "URL sampul maksimal 255 karakter").optional().or(z.literal("")),
+    sampulUrl: z.string().trim().max(255, "Path sampul maksimal 255 karakter").optional().nullable().or(z.literal("")),
     jumlahEksemplar: z
       .number({ required_error: "Jumlah eksemplar wajib diisi" })
       .int("Jumlah eksemplar harus bilangan bulat")
       .min(1, "Minimal harus ada 1 eksemplar")
       .max(BATAS.EKSEMPLAR_MAKS_PER_PENAMBAHAN, `Maksimal ${BATAS.EKSEMPLAR_MAKS_PER_PENAMBAHAN} eksemplar sekaligus`),
     lokasiRak: z.string().trim().max(50, "Lokasi rak maksimal 50 karakter").optional().or(z.literal("")),
-    sumber: z.enum(SUMBER_BUKU).default("manual"),
+    sumber: z
+      .string()
+      .optional()
+      .transform((val): (typeof SUMBER_BUKU)[number] => {
+        if (val === "google_books" || val === "open_library") return val;
+        if (val === "kemendikbud_sibi" || val === "buku_indonesia") return "open_library";
+        return "manual";
+      })
+      .default("manual"),
     idSumberEksternal: z.string().trim().max(100).optional().or(z.literal("")),
   })
   .strict();
@@ -100,7 +108,7 @@ export const BukuUpdateSkema = z
     jumlahHalaman: z.number().int().min(1).max(10000).optional().nullable(),
     kategoriId: UlidSkema,
     sinopsis: z.string().trim().max(BATAS.SINOPSIS_MAKS_KARAKTER).optional().or(z.literal("")),
-    sampulUrl: z.string().trim().max(255).optional().or(z.literal("")),
+    sampulUrl: z.string().trim().max(255).optional().nullable().or(z.literal("")),
     lokasiRak: z.string().trim().max(50).optional().or(z.literal("")),
   })
   .strict();

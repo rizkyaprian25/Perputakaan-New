@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Plus,
   Globe,
@@ -15,6 +15,9 @@ import {
   Printer,
   BookOpen,
   ExternalLink,
+  Upload,
+  Image as ImageIcon,
+  Sparkles,
 } from "lucide-react";
 import { BookSpineTick } from "@/components/ui/BookSpineTick";
 import { BookCover } from "@/components/ui/BookCover";
@@ -50,8 +53,17 @@ export default function AdminBukuPage() {
   const [formSampulUrl, setFormSampulUrl] = useState("");
   const [formJumlahEksemplar, setFormJumlahEksemplar] = useState(3);
   const [formLokasiRak, setFormLokasiRak] = useState("");
-  const [formSumber, setFormSumber] = useState<"manual" | "google_books" | "open_library">("manual");
+  const [formSumber, setFormSumber] = useState<string>("manual");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // State Unggah & Kompresi Sampul WebP
+  const [sedangUnggahSampul, setSedangUnggahSampul] = useState(false);
+  const [dragAktifSampul, setDragAktifSampul] = useState(false);
+  const [infoKompresiSampul, setInfoKompresiSampul] = useState<{
+    ukuranWebpKb: string;
+    hematPersen: number;
+  } | null>(null);
+  const inputFileSampulRef = useRef<HTMLInputElement | null>(null);
 
   // Tambah Kategori Cepat
   const [modalKategoriBuka, setModalKategoriBuka] = useState(false);
@@ -171,6 +183,7 @@ export default function AdminBukuPage() {
     setFormIsbn("");
     setFormSinopsis("");
     setFormSampulUrl("");
+    setInfoKompresiSampul(null);
     setFormJumlahEksemplar(3);
     setFormLokasiRak("R-01");
     setFormSumber("manual");
@@ -192,8 +205,44 @@ export default function AdminBukuPage() {
     setFormKategoriId(item.kategoriId || (daftarKategori[0]?.id ?? ""));
     setFormSinopsis(item.sinopsis || "");
     setFormSampulUrl(item.sampulUrl || "");
+    setInfoKompresiSampul(null);
     setFormLokasiRak(item.lokasiRak || "");
     setModalFormBuka(true);
+  };
+
+  // Handler Unggah Berkas Sampul Manual & Kompresi ke WebP
+  const handleUnggahBerkasSampul = async (file: File | null | undefined) => {
+    if (!file || sedangUnggahSampul) return;
+
+    setSedangUnggahSampul(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/v1/admin/buku/sampul", {
+        method: "POST",
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.sukses) {
+        throw new Error(json.pesan || "Gagal mengunggah & mengompresi sampul");
+      }
+
+      setFormSampulUrl(json.data.sampulUrl);
+      setInfoKompresiSampul({
+        ukuranWebpKb: (Number(json.data.ukuranWebpBytes || 0) / 1024).toFixed(1),
+        hematPersen: Number(json.data.hematPersen || 0),
+      });
+      tampilkanToast(json.pesan, "sukses");
+    } catch (err: any) {
+      tampilkanToast(err.message || "Gagal mengompresi gambar sampul", "error");
+    } finally {
+      setSedangUnggahSampul(false);
+      if (inputFileSampulRef.current) {
+        inputFileSampulRef.current.value = "";
+      }
+    }
   };
 
   // Handler Cari Online (Google Books + Open Library)
@@ -220,8 +269,8 @@ export default function AdminBukuPage() {
     }
   };
 
-  // Handler Pilih Buku dari Pencarian Online
-  const handlePilihBukuOnline = (item: any) => {
+  // Handler Pilih Buku dari Pencarian Online (Otomatis Kompresi Sampul ke WebP Lokal)
+  const handlePilihBukuOnline = async (item: any) => {
     setModeForm("tambah");
     setEditBukuId(null);
     setFormJudul(item.judul || "");
@@ -231,6 +280,7 @@ export default function AdminBukuPage() {
     setFormIsbn((item.isbn || "").replace(/[- ]+/g, ""));
     setFormSinopsis(item.sinopsis || "");
     setFormSampulUrl(item.sampulUrl || "");
+    setInfoKompresiSampul(null);
     setFormSumber(item.sumber || "google_books");
     setFormJumlahEksemplar(3);
 
@@ -247,13 +297,45 @@ export default function AdminBukuPage() {
 
     setModalOnlineBuka(false);
     setModalFormBuka(true);
+
+    // Jika buku eksternal memiliki URL sampul, unduh & kompresi otomatis ke .webp lokal agar ringan
+    if (item.sampulUrl && /^https?:\/\//i.test(item.sampulUrl)) {
+      setSedangUnggahSampul(true);
+      try {
+        const res = await fetch("/api/v1/admin/buku/sampul", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ remoteUrl: item.sampulUrl }),
+        });
+        const json = await res.json();
+        if (res.ok && json.sukses && json.data?.sampulUrl) {
+          setFormSampulUrl(json.data.sampulUrl);
+          setInfoKompresiSampul({
+            ukuranWebpKb: (Number(json.data.ukuranWebpBytes || 0) / 1024).toFixed(1),
+            hematPersen: Number(json.data.hematPersen || 0),
+          });
+          tampilkanToast(
+            `Metadata '${item.judul}' disalin & sampul dikompresi ke WebP (${(
+              Number(json.data.ukuranWebpBytes || 0) / 1024
+            ).toFixed(1)} KB).`,
+            "sukses"
+          );
+          return;
+        }
+      } catch {
+        // Fallback tetap menggunakan sampulUrl asli jika gagal mengunduh
+      } finally {
+        setSedangUnggahSampul(false);
+      }
+    }
+
     tampilkanToast(`Metadata & sampul '${item.judul}' disalin ke formulir.`, "sukses");
   };
 
   // Simpan Buku (Tambah Baru atau Edit)
   const handleSimpanBuku = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formJudul.trim() || !formPenulis.trim() || !formKategoriId || isSubmitting) return;
+    if (!formJudul.trim() || !formPenulis.trim() || !formKategoriId || isSubmitting || sedangUnggahSampul) return;
 
     const isbnBersih = formIsbn.trim().replace(/[- ]+/g, "");
 
@@ -274,7 +356,7 @@ export default function AdminBukuPage() {
         isbn: isbnBersih || undefined,
         kategoriId: formKategoriId,
         sinopsis: formSinopsis.trim() || undefined,
-        sampulUrl: formSampulUrl.trim() || undefined,
+        sampulUrl: formSampulUrl.trim() || "",
         lokasiRak: formLokasiRak.trim() || undefined,
       };
 
@@ -831,32 +913,143 @@ export default function AdminBukuPage() {
 
             <form onSubmit={handleSimpanBuku} className="space-y-4 overflow-y-auto pr-1">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Kolom Kiri: Pratinjau Sampul */}
+                {/* Kolom Kiri: Pratinjau & Unggah Sampul Manual (Otomatis Kompresi WebP) */}
                 <div className="space-y-3">
                   <label className="block text-xs font-medium text-ink-muted">
-                    Pratinjau Sampul (Rasio 2:3)
+                    Sampul Buku (Rasio 2:3 • Auto WebP)
                   </label>
-                  <div className="w-36 mx-auto md:mx-0">
+
+                  {/* Input berkas tersembunyi */}
+                  <input
+                    ref={inputFileSampulRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUnggahBerkasSampul(file);
+                    }}
+                  />
+
+                  {/* Area Pratinjau + Drag & Drop */}
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragAktifSampul(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragAktifSampul(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragAktifSampul(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleUnggahBerkasSampul(file);
+                    }}
+                    onClick={() => {
+                      if (!sedangUnggahSampul) inputFileSampulRef.current?.click();
+                    }}
+                    title="Klik atau tarik gambar sampul ke sini untuk mengunggah"
+                    className={`relative w-40 mx-auto md:mx-0 rounded-lg cursor-pointer group transition-all ${
+                      dragAktifSampul
+                        ? "ring-2 ring-group-hiburan ring-offset-2 scale-[1.02]"
+                        : "hover:ring-2 hover:ring-ink/30 hover:ring-offset-2"
+                    }`}
+                  >
                     <BookCover
                       judul={formJudul || "Judul Buku"}
                       penulis={formPenulis || "Nama Penulis"}
                       kelompok={kategoriTerpilihObj?.kelompok || "hiburan"}
                       sampulUrl={formSampulUrl || null}
                     />
+
+                    {/* Overlay Interaktif Saat Hover / Drag / Sedang Kompresi */}
+                    <div
+                      className={`absolute inset-0 rounded-md flex flex-col items-center justify-center p-3 text-center transition-opacity z-30 ${
+                        sedangUnggahSampul || dragAktifSampul
+                          ? "bg-ink/75 opacity-100"
+                          : "bg-ink/60 opacity-0 group-hover:opacity-100"
+                      }`}
+                    >
+                      {sedangUnggahSampul ? (
+                        <>
+                          <Sparkles className="w-6 h-6 text-white animate-spin mb-1.5" />
+                          <span className="text-[11px] font-semibold text-white leading-tight">
+                            Mengompresi ke WebP...
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-white mb-1.5" />
+                          <span className="text-[11px] font-semibold text-white leading-tight">
+                            {formSampulUrl ? "Klik / Tarik Foto untuk Ganti" : "Klik / Tarik Foto Sampul"}
+                          </span>
+                          <span className="text-[9px] text-white/80 mt-0.5">
+                            Otomatis jadi .webp ringan
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                      URL Gambar Sampul (Opsional)
-                    </label>
-                    <input
-                      type="url"
-                      value={formSampulUrl}
-                      onChange={(e) => setFormSampulUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full px-2.5 py-1.5 rounded border border-line text-xs focus:border-ink"
-                    />
-                    <p className="text-[10px] text-ink-muted mt-1">
-                      Kosongkan untuk menggunakan sampul tipografi otomatis khas Perpustakaan NETRI.
+
+                  {/* Badge Info Kompresi WebP */}
+                  {infoKompresiSampul ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-status-tersedia/10 border border-status-tersedia/30 text-status-tersedia text-[11px] font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        WebP • {infoKompresiSampul.ukuranWebpKb} KB
+                        {infoKompresiSampul.hematPersen > 0
+                          ? ` (Hemat ${infoKompresiSampul.hematPersen}%)`
+                          : ""}
+                      </span>
+                    </div>
+                  ) : formSampulUrl?.endsWith(".webp") ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-paper-sunken border border-line text-ink-muted text-[10px] font-mono">
+                      <ImageIcon className="w-3 h-3 shrink-0 text-status-tersedia" />
+                      <span>Tersimpan: Format .webp ringan</span>
+                    </div>
+                  ) : null}
+
+                  {/* Tombol Aksi Unggah / Hapus Sampul */}
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      disabled={sedangUnggahSampul}
+                      onClick={() => inputFileSampulRef.current?.click()}
+                      className="w-full px-3 py-2 rounded-lg border border-line bg-paper hover:bg-paper-sunken text-ink text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 btn-tactile"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>
+                        {sedangUnggahSampul
+                          ? "Memproses WebP..."
+                          : formSampulUrl
+                          ? "Ganti Foto Sampul"
+                          : "Pilih Foto Sampul"}
+                      </span>
+                    </button>
+
+                    {formSampulUrl && (
+                      <button
+                        type="button"
+                        disabled={sedangUnggahSampul}
+                        onClick={() => {
+                          setFormSampulUrl("");
+                          setInfoKompresiSampul(null);
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-status-hilang/25 text-status-hilang hover:bg-status-hilang/5 text-[11px] font-medium inline-flex items-center justify-center gap-1 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Gunakan Sampul Tipografi</span>
+                      </button>
+                    )}
+
+                    <p className="text-[10px] text-ink-muted leading-relaxed">
+                      Mendukung JPG/PNG/WebP. Gambar otomatis dipotong rasio 2:3 & dikompresi ke{" "}
+                      <strong className="text-ink">.webp (~20 KB)</strong> agar katalog tetap ringan.
                     </p>
                   </div>
                 </div>
