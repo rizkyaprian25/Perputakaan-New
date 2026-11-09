@@ -29,9 +29,26 @@ import {
   GraduationCap,
 } from "lucide-react";
 
+const DAFTAR_BULAN_PILIHAN = [
+  { angka: 0, singkat: "Semua", lengkap: "Semua Bulan (Jan – Des)" },
+  { angka: 1, singkat: "Jan", lengkap: "Januari" },
+  { angka: 2, singkat: "Feb", lengkap: "Februari" },
+  { angka: 3, singkat: "Mar", lengkap: "Maret" },
+  { angka: 4, singkat: "Apr", lengkap: "April" },
+  { angka: 5, singkat: "Mei", lengkap: "Mei" },
+  { angka: 6, singkat: "Jun", lengkap: "Juni" },
+  { angka: 7, singkat: "Jul", lengkap: "Juli" },
+  { angka: 8, singkat: "Agu", lengkap: "Agustus" },
+  { angka: 9, singkat: "Sep", lengkap: "September" },
+  { angka: 10, singkat: "Okt", lengkap: "Oktober" },
+  { angka: 11, singkat: "Nov", lengkap: "November" },
+  { angka: 12, singkat: "Des", lengkap: "Desember" },
+];
+
 export default function AdminDashboardPage() {
   const tahunSekarang = new Date().getFullYear();
   const [tahun, setTahun] = useState<number>(tahunSekarang);
+  const [bulanFilter, setBulanFilter] = useState<number>(0); // 0 = Semua Bulan (Jan-Des), 1..12 = Januari..Desember
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [modeGrafik, setModeGrafik] = useState<"bulanan" | "harian">("bulanan");
@@ -42,9 +59,12 @@ export default function AdminDashboardPage() {
     async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        const res = await fetch(`/api/v1/admin/dashboard?tahun=${tahun}`, {
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `/api/v1/admin/dashboard?tahun=${tahun}&bulan=${bulanFilter}`,
+          {
+            cache: "no-store",
+          }
+        );
         if (res.status === 401) {
           window.location.href = "/admin/login?alihkan=/admin";
           return;
@@ -66,7 +86,7 @@ export default function AdminDashboardPage() {
         if (!silent) setLoading(false);
       }
     },
-    [tahun]
+    [tahun, bulanFilter]
   );
 
   useEffect(() => {
@@ -108,6 +128,7 @@ export default function AdminDashboardPage() {
 
   const statistikBulanan: any[] = data?.statistikBulanan || [];
   const statistikHarian: any[] = data?.statistikHarian || [];
+  const statistikPerHariBulan: any[] = data?.statistikPerHariBulan || [];
   const komposisi = data?.komposisiKoleksi || {
     kelompok: { pelajaran: { judul: 0, eksemplar: 0 }, hiburan: { judul: 0, eksemplar: 0 } },
     perKategori: [],
@@ -122,6 +143,37 @@ export default function AdminDashboardPage() {
     sirkulasiTerbaru: [],
     kunjunganTerbaru: [],
   };
+
+  // Data Bulan yang Sedang Dipilih (jika bulanFilter 1..12)
+  const objekBulanTerpilih = useMemo(() => {
+    if (bulanFilter < 1 || bulanFilter > 12) return null;
+    const itemBulan = statistikBulanan.find((b) => b.bulan === bulanFilter);
+    const namaBulanLengkap =
+      DAFTAR_BULAN_PILIHAN.find((b) => b.angka === bulanFilter)?.lengkap || "";
+
+    let maksHari = 5;
+    let hariPuncakObj: any = null;
+    for (const h of statistikPerHariBulan) {
+      if (h.kunjungan > maksHari) maksHari = h.kunjungan;
+      if (h.peminjaman > maksHari) maksHari = h.peminjaman;
+      if (!hariPuncakObj || h.kunjungan > hariPuncakObj.kunjungan) {
+        hariPuncakObj = h;
+      }
+    }
+
+    return {
+      angka: bulanFilter,
+      namaLengkap: namaBulanLengkap,
+      kunjungan: itemBulan?.kunjungan || 0,
+      peminjaman: itemBulan?.peminjaman || 0,
+      pengembalian: itemBulan?.pengembalian || 0,
+      maksHari,
+      hariPuncak:
+        hariPuncakObj && hariPuncakObj.kunjungan > 0
+          ? `${hariPuncakObj.label} (${hariPuncakObj.kunjungan} hadir)`
+          : "Belum ada kunjungan",
+    };
+  }, [bulanFilter, statistikBulanan, statistikPerHariBulan]);
 
   // Analitik Grafik Bulanan (Nilai Maksimum, Bulan Puncak, Rata-rata)
   const infoGrafikBulanan = useMemo(() => {
@@ -401,81 +453,174 @@ export default function AdminDashboardPage() {
       {/* 3. GRAFIK STATISTIK KUNJUNGAN BULANAN (12 BULAN) & KOMPOSISI KOLEKSI      */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Panel Kiri (8 Kolom): Grafik Batang Ganda Bulanan & Harian */}
+        {/* Panel Kiri (8 Kolom): Grafik Batang Ganda Bulanan & Pilihan Bulan Januari - Desember */}
         <div className="lg:col-span-8 bg-surface border border-line rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
               <div>
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-group-pelajaran" />
                   <h2 className="font-serif text-lg font-bold text-ink">
-                    {modeGrafik === "bulanan"
-                      ? `Statistik Kunjungan & Peminjaman Tiap Bulan (Tahun ${tahun})`
-                      : "Tren Kunjungan & Peminjaman Harian (14 Hari Terakhir)"}
+                    {modeGrafik === "harian"
+                      ? "Tren Kunjungan & Peminjaman (14 Hari Terakhir)"
+                      : objekBulanTerpilih
+                      ? `Statistik Kunjungan & Peminjaman — ${objekBulanTerpilih.namaLengkap} ${tahun}`
+                      : `Statistik Kunjungan & Peminjaman Tiap Bulan (Tahun ${tahun})`}
                   </h2>
                 </div>
                 <p className="text-xs text-ink-muted mt-0.5">
-                  Perbandingan aktivitas kehadiran siswa di kiosk dengan jumlah transaksi peminjaman buku.
+                  Pilih bulan (Januari – Desember) untuk melihat rincian statistik kunjungan & sirkulasi per bulan.
                 </p>
               </div>
 
-              {/* Pengalih Mode Grafik: Bulanan vs 14 Hari */}
-              <div className="flex items-center p-1 rounded-lg bg-paper-sunken border border-line">
-                <button
-                  type="button"
-                  onClick={() => setModeGrafik("bulanan")}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    modeGrafik === "bulanan"
-                      ? "bg-ink text-paper shadow-sm"
-                      : "text-ink-muted hover:text-ink"
-                  }`}
-                >
-                  Tiap Bulan (12 Bln)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModeGrafik("harian")}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    modeGrafik === "harian"
-                      ? "bg-ink text-paper shadow-sm"
-                      : "text-ink-muted hover:text-ink"
-                  }`}
-                >
-                  Harian (14 Hari)
-                </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Dropdown Pilihan Bulan: Januari - Desember */}
+                <div className="inline-flex items-center gap-1.5 bg-paper border border-line rounded-lg px-2.5 py-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-group-pelajaran" />
+                  <select
+                    value={bulanFilter}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setBulanFilter(val);
+                      setModeGrafik("bulanan");
+                    }}
+                    className="bg-transparent font-sans text-xs font-semibold text-ink focus:outline-none cursor-pointer"
+                  >
+                    {DAFTAR_BULAN_PILIHAN.map((b) => (
+                      <option key={b.angka} value={b.angka}>
+                        {b.lengkap}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Pengalih Mode Grafik: Bulanan vs 14 Hari */}
+                <div className="flex items-center p-1 rounded-lg bg-paper-sunken border border-line">
+                  <button
+                    type="button"
+                    onClick={() => setModeGrafik("bulanan")}
+                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                      modeGrafik === "bulanan"
+                        ? "bg-ink text-paper shadow-sm"
+                        : "text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    {bulanFilter > 0 ? "Per Tanggal" : "12 Bulan"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModeGrafik("harian")}
+                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                      modeGrafik === "harian"
+                        ? "bg-ink text-paper shadow-sm"
+                        : "text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    14 Hari Terakhir
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Pita Ringkasan Analitik Bulanan */}
-            <div className="grid grid-cols-3 gap-3 my-4 p-3.5 rounded-xl bg-paper/70 border border-line/80">
-              <div>
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
-                  Total Kunjungan {tahun}
-                </span>
-                <span className="font-mono text-lg font-bold text-status-tersedia">
-                  {infoGrafikBulanan.totalKunjungan} Siswa
-                </span>
-              </div>
-              <div>
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
-                  Rata-Rata per Bulan
-                </span>
-                <span className="font-mono text-lg font-bold text-ink">
-                  {infoGrafikBulanan.rataBulanan} Kunjungan
-                </span>
-              </div>
-              <div>
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
-                  Bulan Tertinggi (Peak)
-                </span>
-                <span className="font-serif text-sm font-bold text-group-pelajaran truncate block">
-                  {infoGrafikBulanan.bulanPuncak}
-                </span>
-              </div>
+            {/* Baris Pil Cepat Bulan: Semua | Jan | Feb | Mar | Apr | Mei | Jun | Jul | Agu | Sep | Okt | Nov | Des */}
+            <div className="flex items-center gap-1 overflow-x-auto py-2.5 border-b border-line/60 no-scrollbar">
+              {DAFTAR_BULAN_PILIHAN.map((b) => {
+                const aktif = modeGrafik === "bulanan" && bulanFilter === b.angka;
+                return (
+                  <button
+                    key={b.angka}
+                    type="button"
+                    onClick={() => {
+                      setBulanFilter(b.angka);
+                      setModeGrafik("bulanan");
+                    }}
+                    className={`px-2.5 py-1 rounded-md font-mono text-[11px] font-semibold transition-all shrink-0 ${
+                      aktif
+                        ? "bg-group-pelajaran text-white shadow-sm"
+                        : "bg-paper hover:bg-paper-sunken text-ink-muted hover:text-ink border border-line/60"
+                    }`}
+                  >
+                    {b.singkat}
+                  </button>
+                );
+              })}
             </div>
+
+            {/* Pita Ringkasan Analitik (Menyesuaikan Semua Bulan vs Bulan Terpilih Januari-Desember) */}
+            {objekBulanTerpilih && modeGrafik === "bulanan" ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4 p-3.5 rounded-xl bg-group-pelajaran/5 border border-group-pelajaran/20">
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Kunjungan {objekBulanTerpilih.namaLengkap}
+                  </span>
+                  <span className="font-mono text-lg font-bold text-status-tersedia">
+                    {objekBulanTerpilih.kunjungan} Siswa
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Dipinjam ({objekBulanTerpilih.namaLengkap})
+                  </span>
+                  <span className="font-mono text-lg font-bold text-group-pelajaran">
+                    {objekBulanTerpilih.peminjaman} Buku
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Dikembalikan ({objekBulanTerpilih.namaLengkap})
+                  </span>
+                  <span className="font-mono text-lg font-bold text-ink">
+                    {objekBulanTerpilih.pengembalian} Buku
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Tanggal Puncak
+                  </span>
+                  <span className="font-serif text-sm font-bold text-ink truncate block">
+                    {objekBulanTerpilih.hariPuncak}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4 p-3.5 rounded-xl bg-paper/70 border border-line/80">
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Total Kunjungan {tahun}
+                  </span>
+                  <span className="font-mono text-lg font-bold text-status-tersedia">
+                    {infoGrafikBulanan.totalKunjungan} Siswa
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Total Dipinjam {tahun}
+                  </span>
+                  <span className="font-mono text-lg font-bold text-group-pelajaran">
+                    {infoGrafikBulanan.totalPinjam} Buku
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Rata-Rata per Bulan
+                  </span>
+                  <span className="font-mono text-lg font-bold text-ink">
+                    {infoGrafikBulanan.rataBulanan} Hadir
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    Bulan Tertinggi (Peak)
+                  </span>
+                  <span className="font-serif text-sm font-bold text-group-pelajaran truncate block">
+                    {infoGrafikBulanan.bulanPuncak}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Area Visualisasi Grafik Batang Interaktif */}
-            {modeGrafik === "bulanan" ? (
+            {modeGrafik === "bulanan" && bulanFilter === 0 ? (
               <div className="pt-4 pb-2">
                 <div className="h-56 flex items-end justify-between gap-2 sm:gap-3 px-2 border-b border-line pb-2">
                   {statistikBulanan.map((item) => {
@@ -493,15 +638,18 @@ export default function AdminDashboardPage() {
                     return (
                       <div
                         key={item.bulan}
-                        className="flex-1 flex flex-col items-center group relative"
+                        onClick={() => setBulanFilter(item.bulan)}
+                        title={`Klik untuk melihat rincian bulan ${item.namaLengkap}`}
+                        className="flex-1 flex flex-col items-center group relative cursor-pointer"
                       >
                         {/* Tooltip Hover Detail Bulanan */}
-                        <div className="opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity absolute -top-16 z-20 bg-ink text-paper px-2.5 py-1.5 rounded-lg text-[10px] font-mono whitespace-nowrap shadow-lg">
+                        <div className="opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity absolute -top-20 z-20 bg-ink text-paper px-2.5 py-1.5 rounded-lg text-[10px] font-mono whitespace-nowrap shadow-lg">
                           <div className="font-bold text-white border-b border-white/20 pb-0.5 mb-0.5">
                             {item.namaLengkap} {tahun}
                           </div>
                           <div>Kunjungan: {item.kunjungan}</div>
                           <div>Dipinjam: {item.peminjaman}</div>
+                          <div>Dikembalikan: {item.pengembalian}</div>
                         </div>
 
                         {/* Angka kecil di atas batang */}
@@ -538,10 +686,68 @@ export default function AdminDashboardPage() {
                           className={`mt-2 font-mono text-[10px] ${
                             isBulanIni
                               ? "font-extrabold text-group-hiburan underline underline-offset-4"
-                              : "font-medium text-ink-muted"
+                              : "font-medium text-ink-muted group-hover:text-ink"
                           }`}
                         >
                           {item.namaBulan}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : modeGrafik === "bulanan" && objekBulanTerpilih ? (
+              <div className="pt-4 pb-2">
+                <div className="h-56 flex items-end justify-between gap-0.5 sm:gap-1 px-1 border-b border-line pb-2 overflow-x-auto">
+                  {statistikPerHariBulan.map((item) => {
+                    const tinggiKunjungan = Math.max(
+                      item.kunjungan > 0 ? 8 : 2,
+                      Math.round((item.kunjungan / objekBulanTerpilih.maksHari) * 180)
+                    );
+                    const tinggiPinjam = Math.max(
+                      item.peminjaman > 0 ? 8 : 2,
+                      Math.round((item.peminjaman / objekBulanTerpilih.maksHari) * 180)
+                    );
+
+                    return (
+                      <div
+                        key={item.hariKe}
+                        className="flex-1 min-w-[14px] flex flex-col items-center group relative"
+                      >
+                        <div className="opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity absolute -top-20 z-20 bg-ink text-paper px-2.5 py-1.5 rounded-lg text-[10px] font-mono whitespace-nowrap shadow-lg">
+                          <div className="font-bold text-white border-b border-white/20 pb-0.5 mb-0.5">
+                            {item.namaHari}, {item.label} {tahun}
+                          </div>
+                          <div>Kunjungan: {item.kunjungan}</div>
+                          <div>Dipinjam: {item.peminjaman}</div>
+                          <div>Dikembalikan: {item.pengembalian}</div>
+                        </div>
+
+                        <div className="h-4 flex items-center justify-center mb-1">
+                          {item.kunjungan > 0 && (
+                            <span className="font-mono text-[8px] font-bold text-ink-muted">
+                              {item.kunjungan}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="w-full flex items-end justify-center gap-[1px] h-[180px]">
+                          <div
+                            style={{ height: `${tinggiKunjungan}px` }}
+                            className={`w-1.5 sm:w-2 rounded-t transition-all duration-300 ${
+                              item.kunjungan > 0 ? "bg-status-tersedia" : "bg-line/60"
+                            }`}
+                          />
+                          <div
+                            style={{ height: `${tinggiPinjam}px` }}
+                            className={`w-1.5 sm:w-2 rounded-t transition-all duration-300 ${
+                              item.peminjaman > 0 ? "bg-group-pelajaran" : "bg-line/40"
+                            }`}
+                          />
+                        </div>
+
+                        <span className="mt-2 font-mono text-[8px] sm:text-[9px] text-ink-muted">
+                          {item.hariKe}
                         </span>
                       </div>
                     );

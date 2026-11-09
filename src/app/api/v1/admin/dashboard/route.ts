@@ -55,6 +55,10 @@ export async function GET(req: NextRequest) {
       ? tahunParam
       : tahunSekarang;
 
+  const bulanParam = Number(searchParams.get("bulan") || 0);
+  const bulanTerpilih =
+    Number.isFinite(bulanParam) && bulanParam >= 1 && bulanParam <= 12 ? bulanParam : 0;
+
   const connection = await pool.getConnection();
 
   try {
@@ -207,6 +211,65 @@ export async function GET(req: NextRequest) {
         hari: namaHariSingkat[d.getDay()],
         kunjungan: mapKunjunganHari.get(iso) || 0,
         peminjaman: mapPinjamHari.get(iso) || 0,
+      };
+    });
+
+    // 6B. Statistik Harian untuk Bulan Spesifik (Januari - Desember) jika bulan dipilih
+    const bulanTargetHarian = bulanTerpilih > 0 ? bulanTerpilih : new Date().getMonth() + 1;
+    const [kunjunganHariBulanRows]: any = await connection.query(
+      `
+      SELECT DAY(tanggal) AS hariKe, COUNT(*) AS total
+      FROM kunjungan
+      WHERE YEAR(tanggal) = ? AND MONTH(tanggal) = ?
+      GROUP BY DAY(tanggal)
+      `,
+      [tahun, bulanTargetHarian]
+    );
+
+    const [pinjamHariBulanRows]: any = await connection.query(
+      `
+      SELECT DAY(dipinjam_pada) AS hariKe, COUNT(*) AS total
+      FROM peminjaman
+      WHERE YEAR(dipinjam_pada) = ? AND MONTH(dipinjam_pada) = ?
+      GROUP BY DAY(dipinjam_pada)
+      `,
+      [tahun, bulanTargetHarian]
+    );
+
+    const [kembaliHariBulanRows]: any = await connection.query(
+      `
+      SELECT DAY(dikembalikan_pada) AS hariKe, COUNT(*) AS total
+      FROM peminjaman
+      WHERE dikembalikan_pada IS NOT NULL AND YEAR(dikembalikan_pada) = ? AND MONTH(dikembalikan_pada) = ?
+      GROUP BY DAY(dikembalikan_pada)
+      `,
+      [tahun, bulanTargetHarian]
+    );
+
+    const mapKnjHariBulan = new Map<number, number>();
+    for (const r of kunjunganHariBulanRows || []) {
+      mapKnjHariBulan.set(Number(r.hariKe), Number(r.total));
+    }
+    const mapPjmHariBulan = new Map<number, number>();
+    for (const r of pinjamHariBulanRows || []) {
+      mapPjmHariBulan.set(Number(r.hariKe), Number(r.total));
+    }
+    const mapKmbHariBulan = new Map<number, number>();
+    for (const r of kembaliHariBulanRows || []) {
+      mapKmbHariBulan.set(Number(r.hariKe), Number(r.total));
+    }
+
+    const jumlahHariDalamBulan = new Date(tahun, bulanTargetHarian, 0).getDate();
+    const statistikPerHariBulan = Array.from({ length: jumlahHariDalamBulan }, (_, idx) => {
+      const tglAngka = idx + 1;
+      const dObj = new Date(tahun, bulanTargetHarian - 1, tglAngka);
+      return {
+        hariKe: tglAngka,
+        label: `${String(tglAngka).padStart(2, "0")} ${NAMA_BULAN_SINGKAT[bulanTargetHarian - 1]}`,
+        namaHari: namaHariSingkat[dObj.getDay()],
+        kunjungan: mapKnjHariBulan.get(tglAngka) || 0,
+        peminjaman: mapPjmHariBulan.get(tglAngka) || 0,
+        pengembalian: mapKmbHariBulan.get(tglAngka) || 0,
       };
     });
 
@@ -406,6 +469,8 @@ export async function GET(req: NextRequest) {
         },
         statistikBulanan,
         statistikHarian,
+        statistikPerHariBulan,
+        bulanTargetHarian,
         komposisiKoleksi: {
           kelompok: kelompokMap,
           perKategori: (kategoriRows || []).map((k: any) => ({
