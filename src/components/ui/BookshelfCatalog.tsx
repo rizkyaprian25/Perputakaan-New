@@ -169,7 +169,7 @@ function OrnamenRakKayu({ varian }: { varian: number }) {
 
 export function BookshelfCatalog({
   items,
-  defaultViewMode = "spines",
+  defaultViewMode = "faceout",
   showGroupFilter = true,
   judulLemari,
 }: BookshelfCatalogProps) {
@@ -178,26 +178,28 @@ export function BookshelfCatalog({
   const [filterHanyaTersedia, setFilterHanyaTersedia] = useState(false);
   const [selectedBook, setSelectedBook] = useState<ItemKatalogPublik | null>(null);
 
-  // Ingat preferensi tampilan rak pengguna
+  // Ingat preferensi tampilan rak pengguna (default: faceout / Sampul di Rak 100%)
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("netri_bookshelf_mode") as
+      const saved = localStorage.getItem("netri_bookshelf_mode_v2") as
         | "spines"
         | "faceout"
         | "grid"
         | null;
       if (saved === "spines" || saved === "faceout" || saved === "grid") {
         setViewMode(saved);
+      } else {
+        setViewMode(defaultViewMode);
       }
     } catch {
       // Abaikan
     }
-  }, []);
+  }, [defaultViewMode]);
 
   const gantiModeTampilan = (mode: "spines" | "faceout" | "grid") => {
     setViewMode(mode);
     try {
-      localStorage.setItem("netri_bookshelf_mode", mode);
+      localStorage.setItem("netri_bookshelf_mode_v2", mode);
     } catch {
       // Abaikan
     }
@@ -322,6 +324,20 @@ export function BookshelfCatalog({
               >
                 <button
                   type="button"
+                  onClick={() => gantiModeTampilan("faceout")}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    viewMode === "faceout"
+                      ? "bg-ink text-paper shadow-xs"
+                      : "text-ink-muted hover:text-ink"
+                  }`}
+                  title="Tampilan Sampul Buku Berdiri di Atas Rak Kayu (Maks. 3 Buku per Baris)"
+                >
+                  <GalleryHorizontalEnd className="w-3.5 h-3.5" />
+                  <span>Sampul di Rak</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => gantiModeTampilan("spines")}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     viewMode === "spines"
@@ -332,20 +348,6 @@ export function BookshelfCatalog({
                 >
                   <Library className="w-3.5 h-3.5" />
                   <span>Punggung Buku</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => gantiModeTampilan("faceout")}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    viewMode === "faceout"
-                      ? "bg-ink text-paper shadow-xs"
-                      : "text-ink-muted hover:text-ink"
-                  }`}
-                  title="Tampilan Sampul Buku Berdiri di Atas Rak Kayu"
-                >
-                  <GalleryHorizontalEnd className="w-3.5 h-3.5" />
-                  <span>Sampul di Rak</span>
                 </button>
 
                 <button
@@ -486,14 +488,18 @@ export function BookshelfCatalog({
         ) : (
           /* MODE 1 (PUNGGUNG BUKU / SPINES) & MODE 2 (SAMPUL DI RAK / FACE-OUT)
              Disusun dalam Grid 2 Bilik Lemari Sejajar Horizontal (Landscape 16:9) */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          <div
+            className={
+              daftarRakKategori.length === 1
+                ? "max-w-2xl mx-auto w-full"
+                : "grid grid-cols-1 lg:grid-cols-2 gap-6 items-start"
+            }
+          >
             {daftarRakKategori.map((rak, rakIdx) => {
-              // Jika hanya ada 1 kategori atau kategori ini punya sangat banyak buku (>11 buku),
-              // bentangkan bilik lemari menjadi lebar penuh (2 kolom panorama)
+              // Untuk mode punggung buku (spines) jika bukunya sangat banyak (>14), bentangkan bilik
               const bentangPenuh =
                 daftarRakKategori.length === 1 ||
-                rak.bukuList.length > 11 ||
-                (viewMode === "faceout" && rak.bukuList.length > 5);
+                (viewMode === "spines" && rak.bukuList.length > 14);
 
               const jumlahTersediaRak = rak.bukuList.filter(
                 (b) => b.tersediaEksemplar > 0
@@ -503,7 +509,7 @@ export function BookshelfCatalog({
                 <div
                   key={`${rak.kelompok}-${rak.namaKategori}`}
                   className={`bookshelf-bay-alcove rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all ${
-                    bentangPenuh ? "lg:col-span-2" : "lg:col-span-1"
+                    bentangPenuh && daftarRakKategori.length > 1 ? "lg:col-span-2" : "w-full"
                   }`}
                 >
                   {/* 1. Pita Label Kategori di Puncak Ceruk Rak (Shelf Header Pill - Persis Otium) */}
@@ -639,51 +645,74 @@ export function BookshelfCatalog({
                     ) : (
                       /* ========================================================= */
                       /* TAMPILAN 2: SAMPUL BUKU BERDIRI DI ATAS RAK KAYU (FACE-OUT)*/
+                      /* Multi-Tier Bertingkat: Maksimal 3 Buku per Baris / Papan */
+                      /* Bebas 100% dari Scroll Kanan-Kiri                         */
                       /* ========================================================= */
-                      <div className="px-3 sm:px-5 pt-3 flex items-end justify-start gap-4 sm:gap-5 overflow-x-auto scrollbar-none min-h-[215px]">
-                        {rak.bukuList.map((bukuItem) => {
-                          const tersedia = bukuItem.tersediaEksemplar > 0;
-                          return (
-                            <button
-                              key={bukuItem.id}
-                              type="button"
-                              onClick={() => setSelectedBook(bukuItem)}
-                              className="faceout-book-item group relative shrink-0 w-[118px] sm:w-[130px] rounded-t-md overflow-hidden cursor-pointer text-left bg-surface"
-                            >
-                              <BookCover
-                                judul={bukuItem.judul}
-                                penulis={bukuItem.penulis}
-                                kelompok={bukuItem.kelompok}
-                                sampulUrl={bukuItem.sampulUrl}
-                                className="w-full rounded-none rounded-t-md border-b-0"
-                              />
-                              {/* Pita Status Ketersediaan & Lokasi Rak di Kaki Sampul */}
-                              <div className="bg-ink/90 text-paper px-2 py-1 flex items-center justify-between text-[10px] font-mono">
-                                <span className="truncate">
-                                  {bukuItem.lokasiRak || "Rak Utama"}
-                                </span>
-                                <span
-                                  className={`px-1.5 py-0.2 rounded font-bold ${
-                                    tersedia
-                                      ? "bg-status-tersedia text-white"
-                                      : "bg-danger text-white"
-                                  }`}
-                                >
-                                  {bukuItem.tersediaEksemplar}/{bukuItem.totalEksemplar}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
+                      <div className="space-y-4">
+                        {(() => {
+                          const barisTingkatBuku: ItemKatalogPublik[][] = [];
+                          for (let i = 0; i < rak.bukuList.length; i += 3) {
+                            barisTingkatBuku.push(rak.bukuList.slice(i, i + 3));
+                          }
 
-                        <div className="ml-auto pl-2 flex items-end">
-                          <OrnamenRakKayu varian={rakIdx + 1} />
-                        </div>
+                          return barisTingkatBuku.map((chunk, tierIdx) => (
+                            <div key={tierIdx} className="space-y-0">
+                              <div className="px-1 sm:px-3 pt-3 flex items-end justify-start gap-2.5 sm:gap-4 md:gap-5 min-h-[205px] overflow-hidden">
+                                {chunk.map((bukuItem) => {
+                                  const tersedia = bukuItem.tersediaEksemplar > 0;
+                                  return (
+                                    <button
+                                      key={bukuItem.id}
+                                      type="button"
+                                      onClick={() => setSelectedBook(bukuItem)}
+                                      className="faceout-book-item group relative shrink-0 w-[96px] xs:w-[108px] sm:w-[126px] md:w-[136px] rounded-t-md overflow-hidden cursor-pointer text-left bg-surface"
+                                    >
+                                      <BookCover
+                                        judul={bukuItem.judul}
+                                        penulis={bukuItem.penulis}
+                                        kelompok={bukuItem.kelompok}
+                                        sampulUrl={bukuItem.sampulUrl}
+                                        className="w-full rounded-none rounded-t-md border-b-0 p-2 sm:p-3 text-[10px] sm:text-xs"
+                                      />
+                                      {/* Pita Status Ketersediaan & Lokasi Rak di Kaki Sampul */}
+                                      <div className="bg-ink/90 text-paper px-1.5 sm:px-2 py-1 flex items-center justify-between text-[9px] sm:text-[10px] font-mono">
+                                        <span className="truncate max-w-[55px] sm:max-w-[70px]">
+                                          {bukuItem.lokasiRak || "Rak"}
+                                        </span>
+                                        <span
+                                          className={`px-1 sm:px-1.5 py-0.2 rounded font-bold ${
+                                            tersedia
+                                              ? "bg-status-tersedia text-white"
+                                              : "bg-danger text-white"
+                                          }`}
+                                        >
+                                          {bukuItem.tersediaEksemplar}/{bukuItem.totalEksemplar}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Ornamen Perpustakaan Klasik di Ujung Kanan bila Tersisa Ruang Kosong */}
+                                {chunk.length < 3 && (
+                                  <div className="ml-auto pl-1 sm:pl-2 flex items-end">
+                                    <OrnamenRakKayu varian={rakIdx + tierIdx + 1} />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Papan Kayu Penyangga 3D untuk Baris / Tingkat Rak Ini */}
+                              <div className="wooden-plank-3d rounded-md w-full" />
+                            </div>
+                          ));
+                        })()}
                       </div>
                     )}
 
-                    {/* 3. Papan Kayu Penyangga 3D (Wooden Shelf Plank) */}
-                    <div className="wooden-plank-3d rounded-md w-full" />
+                    {/* 3. Papan Kayu Penyangga 3D untuk Mode Punggung Buku (Spines) */}
+                    {viewMode === "spines" && (
+                      <div className="wooden-plank-3d rounded-md w-full" />
+                    )}
                   </div>
                 </div>
               );

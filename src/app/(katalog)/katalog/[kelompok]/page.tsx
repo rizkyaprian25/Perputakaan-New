@@ -193,7 +193,7 @@ export default async function KatalogKelompokPage({
       ) : (
         <BookshelfCatalog
           items={daftarBuku}
-          defaultViewMode="spines"
+          defaultViewMode="faceout"
           showGroupFilter={false}
           judulLemari={`Lemari ${namaKelompok}`}
         />

@@ -275,7 +275,7 @@ export default async function KatalogBerandaPage({ searchParams }: KatalogBerand
         ) : (
           <BookshelfCatalog
             items={daftarBuku}
-            defaultViewMode="spines"
+            defaultViewMode="faceout"
             showGroupFilter={true}
             judulLemari="Filter Lemari"
           />
