@@ -15,12 +15,20 @@ async function main() {
   // 1. Kategori Baku (Hiburan vs Pelajaran)
   console.log("-> Seeding kategori buku...");
   const kategoriData = [
-    // Kelompok Hiburan
+    // Kelompok Hiburan & Wawasan Umum
     { id: ulid(), kelompok: "hiburan" as const, nama: "Novel", slug: "novel" },
     { id: ulid(), kelompok: "hiburan" as const, nama: "Komik", slug: "komik" },
     { id: ulid(), kelompok: "hiburan" as const, nama: "Cerpen & Puisi", slug: "cerpen-puisi" },
     { id: ulid(), kelompok: "hiburan" as const, nama: "Biografi", slug: "biografi" },
     { id: ulid(), kelompok: "hiburan" as const, nama: "Sains Populer", slug: "sains-populer" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Pengembangan Diri", slug: "pengembangan-diri" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Filsafat & Makna Hidup", slug: "filsafat-makna-hidup" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Psikologi", slug: "psikologi" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Nonfiksi Umum", slug: "nonfiksi-umum" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Bisnis & Finansial", slug: "bisnis-finansial" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Sejarah & Budaya", slug: "sejarah-budaya" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Teknologi & Digital", slug: "teknologi-digital" },
+    { id: ulid(), kelompok: "hiburan" as const, nama: "Religi & Spiritualitas", slug: "religi-spiritualitas" },
 
     // Kelompok Pelajaran
     { id: ulid(), kelompok: "pelajaran" as const, nama: "Matematika", slug: "matematika" },

@@ -73,7 +73,144 @@ function petakanKategoriOtomatis(
     return daftarKategoriDB.find((k) => k.nama.toLowerCase().includes(kataKunci.toLowerCase()));
   };
 
-  // 1. PENDIDIKAN AGAMA & BUDI PEKERTI
+  // A. DIRECT MATCHING: Jika kategori/subjek dari API cocok persis dengan salah satu kategori di DB
+  for (const catName of [...categories, ...subjects]) {
+    const cleanCat = (catName || "").trim().toLowerCase();
+    if (!cleanCat || cleanCat.length < 3) continue;
+
+    const foundDirect = daftarKategoriDB.find(
+      (k) =>
+        k.nama.toLowerCase() === cleanCat ||
+        k.slug === cleanCat.replace(/[^a-z0-9]+/g, "-") ||
+        k.nama.toLowerCase().includes(cleanCat) ||
+        cleanCat.includes(k.nama.toLowerCase())
+    );
+
+    if (foundDirect) {
+      let rak = foundDirect.kelompok === "pelajaran" ? "P-01" : "R-01";
+      if (foundDirect.slug === "filsafat") rak = "F-01";
+      else if (foundDirect.slug === "pengembangan-diri") rak = "PD-01";
+      else if (foundDirect.slug === "psikologi") rak = "PS-01";
+      else if (foundDirect.slug === "bisnis-finansial") rak = "B-02";
+      else if (foundDirect.slug === "sejarah-budaya") rak = "SJ-01";
+      else if (foundDirect.slug === "teknologi-digital") rak = "TK-01";
+      else if (foundDirect.slug === "komik") rak = "K-01";
+      else if (foundDirect.slug === "biografi") rak = "B-01";
+      return { id: foundDirect.id, nama: foundDirect.nama, kelompok: foundDirect.kelompok, lokasiRakSaran: rak };
+    }
+  }
+
+  // B. PENCARIAN CERDAS BERBASIS KATA KUNCI (KEYWORD TAXONOMY MATCHER)
+
+  // 1. FILSAFAT & MAKNA HIDUP (Contoh: Filosofi Teras, Stoikisme, Makna Hidup)
+  if (
+    teksGabung.includes("filosofi") ||
+    teksGabung.includes("filsafat") ||
+    teksGabung.includes("philosophy") ||
+    teksGabung.includes("stoik") ||
+    teksGabung.includes("stoicism") ||
+    teksGabung.includes("makna hidup") ||
+    teksGabung.includes("kebijaksanaan") ||
+    teksGabung.includes("etika hidup") ||
+    teksGabung.includes("eksistensialisme") ||
+    teksGabung.includes("seneca") ||
+    teksGabung.includes("epictetus") ||
+    teksGabung.includes("marcus aurelius")
+  ) {
+    const k = cariKategori("filsafat") || cariNama("filsafat") || cariKategori("pengembangan-diri");
+    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "F-01" };
+  }
+
+  // 2. PENGEMBANGAN DIRI / SELF-IMPROVEMENT (Contoh: Atomic Habits, Mindset, Motivasi)
+  if (
+    teksGabung.includes("pengembangan diri") ||
+    teksGabung.includes("self improvement") ||
+    teksGabung.includes("self-improvement") ||
+    teksGabung.includes("self help") ||
+    teksGabung.includes("self-help") ||
+    teksGabung.includes("kebiasaan") ||
+    teksGabung.includes("habits") ||
+    teksGabung.includes("mindset") ||
+    teksGabung.includes("produktivitas") ||
+    teksGabung.includes("productivity") ||
+    teksGabung.includes("motivasi") ||
+    teksGabung.includes("bodo amat") ||
+    teksGabung.includes("sukses") ||
+    teksGabung.includes("manajemen waktu")
+  ) {
+    const k = cariKategori("pengembangan-diri") || cariNama("pengembangan diri");
+    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "PD-01" };
+  }
+
+  // 3. PSIKOLOGI (Contoh: Bicara Itu Ada Seninya, Mental Health, Emosi)
+  if (
+    teksGabung.includes("psikologi") ||
+    teksGabung.includes("psychology") ||
+    teksGabung.includes("mental health") ||
+    teksGabung.includes("kesehatan mental") ||
+    teksGabung.includes("bicara itu ada seninya") ||
+    teksGabung.includes("introvert") ||
+    teksGabung.includes("ekstrovert") ||
+    teksGabung.includes("kepribadian") ||
+    teksGabung.includes("emosi") ||
+    teksGabung.includes("komunikasi interpersonal") ||
+    teksGabung.includes("kecemasan") ||
+    teksGabung.includes("trauma")
+  ) {
+    const k = cariKategori("psikologi") || cariNama("psikologi") || cariKategori("pengembangan-diri");
+    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "PS-01" };
+  }
+
+  // 4. BISNIS & FINANSIAL (Contoh: Rich Dad Poor Dad, Investasi, Saham)
+  if (
+    teksGabung.includes("bisnis") ||
+    teksGabung.includes("business") ||
+    teksGabung.includes("finansial") ||
+    teksGabung.includes("financial") ||
+    teksGabung.includes("keuangan") ||
+    teksGabung.includes("investasi") ||
+    teksGabung.includes("saham") ||
+    teksGabung.includes("uang") ||
+    teksGabung.includes("money") ||
+    teksGabung.includes("rich dad") ||
+    teksGabung.includes("marketing") ||
+    teksGabung.includes("kewirausahaan") ||
+    teksGabung.includes("entrepreneur")
+  ) {
+    const k = cariKategori("bisnis-finansial") || cariNama("bisnis") || cariKategori("nonfiksi-umum");
+    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "B-02" };
+  }
+
+  // 5. SEJARAH & BUDAYA (Contoh: Sapiens, Peradaban, Nusantara)
+  if (
+    teksGabung.includes("sejarah dunia") ||
+    teksGabung.includes("peradaban") ||
+    teksGabung.includes("sapiens") ||
+    teksGabung.includes("arkeologi") ||
+    teksGabung.includes("kebudayaan") ||
+    teksGabung.includes("budaya nusantara") ||
+    (teksGabung.includes("sejarah") && !sumber.includes("sibi"))
+  ) {
+    const k = cariKategori("sejarah-budaya") || cariNama("sejarah") || cariKategori("nonfiksi-umum");
+    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "SJ-01" };
+  }
+
+  // 6. TEKNOLOGI & DIGITAL (Contoh: Coding, AI, Komputer)
+  if (
+    teksGabung.includes("teknologi digital") ||
+    teksGabung.includes("pemrograman") ||
+    teksGabung.includes("programming") ||
+    teksGabung.includes("coding") ||
+    teksGabung.includes("artificial intelligence") ||
+    teksGabung.includes("kecerdasan buatan") ||
+    teksGabung.includes("internet of things") ||
+    teksGabung.includes("cyber security")
+  ) {
+    const k = cariKategori("teknologi-digital") || cariNama("teknologi") || cariKategori("sains-populer");
+    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "TK-01" };
+  }
+
+  // 7. PENDIDIKAN AGAMA & BUDI PEKERTI / SPIRITUALITAS
   if (
     teksGabung.includes("agama") ||
     teksGabung.includes("budi pekerti") ||
@@ -84,13 +221,21 @@ function petakanKategoriOtomatis(
     teksGabung.includes("buddha") ||
     teksGabung.includes("quran") ||
     teksGabung.includes("hadits") ||
-    teksGabung.includes("fiqih")
+    teksGabung.includes("fiqih") ||
+    teksGabung.includes("tasawuf") ||
+    teksGabung.includes("akhlak") ||
+    teksGabung.includes("renungan hati") ||
+    teksGabung.includes("spiritual")
   ) {
-    const k = cariKategori("pai") || cariNama("agama");
-    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-07" };
+    if (sumber === "kemendikbud_sibi" || teksGabung.includes("pelajaran") || teksGabung.includes("kurikulum")) {
+      const k = cariKategori("pai") || cariNama("agama");
+      if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-07" };
+    }
+    const kReligi = cariKategori("spiritualitas") || cariNama("religi") || cariKategori("pai");
+    if (kReligi) return { id: kReligi.id, nama: kReligi.nama, kelompok: kReligi.kelompok, lokasiRakSaran: "SP-01" };
   }
 
-  // 2. MATEMATIKA
+  // 8. MATEMATIKA (Buku Teks / Pelajaran)
   if (
     teksGabung.includes("matematika") ||
     teksGabung.includes("mathematics") ||
@@ -104,7 +249,7 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-04" };
   }
 
-  // 3. ILMU PENGETAHUAN ALAM (IPA)
+  // 9. ILMU PENGETAHUAN ALAM (IPA)
   if (
     teksGabung.includes("ilmu pengetahuan alam") ||
     /\bipa\b/.test(teksGabung) ||
@@ -119,24 +264,20 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-03" };
   }
 
-  // 4. ILMU PENGETAHUAN SOSIAL (IPS)
+  // 10. ILMU PENGETAHUAN SOSIAL (IPS)
   if (
     teksGabung.includes("ilmu pengetahuan sosial") ||
     /\bips\b/.test(teksGabung) ||
-    teksGabung.includes("sejarah") ||
     teksGabung.includes("geografi") ||
-    teksGabung.includes("ekonomi") ||
+    teksGabung.includes("ekonomi sekolah") ||
     teksGabung.includes("sosiologi") ||
-    teksGabung.includes("history") ||
-    teksGabung.includes("geography") ||
-    teksGabung.includes("economics") ||
-    teksGabung.includes("social science")
+    (sumber === "kemendikbud_sibi" && teksGabung.includes("sejarah"))
   ) {
     const k = cariKategori("ips") || cariNama("ips");
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-05" };
   }
 
-  // 5. BAHASA INGGRIS
+  // 11. BAHASA INGGRIS
   if (
     teksGabung.includes("bahasa inggris") ||
     teksGabung.includes("english") ||
@@ -148,7 +289,7 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-02" };
   }
 
-  // 6. BAHASA INDONESIA
+  // 12. BAHASA INDONESIA
   if (
     teksGabung.includes("bahasa indonesia") ||
     teksGabung.includes("tata bahasa indonesia") ||
@@ -158,7 +299,7 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-01" };
   }
 
-  // 7. PPKN / PANCASILA
+  // 13. PPKN / PANCASILA
   if (
     teksGabung.includes("ppkn") ||
     teksGabung.includes("pancasila") ||
@@ -169,7 +310,7 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-06" };
   }
 
-  // 8. KOMIK / MANGA
+  // 14. KOMIK / MANGA
   if (
     teksGabung.includes("komik") ||
     teksGabung.includes("comic") ||
@@ -181,20 +322,21 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "K-01" };
   }
 
-  // 9. BIOGRAFI / AUTOBIOGRAFI
+  // 15. BIOGRAFI / AUTOBIOGRAFI
   if (
     teksGabung.includes("biografi") ||
     teksGabung.includes("biography") ||
     teksGabung.includes("autobiography") ||
     teksGabung.includes("memoir") ||
     teksGabung.includes("memoar") ||
-    teksGabung.includes("tokoh")
+    teksGabung.includes("kisah nyata") ||
+    teksGabung.includes("perjalanan hidup")
   ) {
     const k = cariKategori("biografi") || cariNama("biografi");
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "B-01" };
   }
 
-  // 10. CERPEN & PUISI
+  // 16. CERPEN & PUISI
   if (
     teksGabung.includes("cerpen") ||
     teksGabung.includes("puisi") ||
@@ -209,23 +351,34 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "R-02" };
   }
 
-  // 11. SAINS POPULER
+  // 17. SAINS POPULER
   if (
     teksGabung.includes("sains populer") ||
     teksGabung.includes("popular science") ||
     teksGabung.includes("astronomi") ||
     teksGabung.includes("astronomy") ||
     teksGabung.includes("antariksa") ||
-    teksGabung.includes("teknologi") ||
-    teksGabung.includes("technology") ||
-    teksGabung.includes("ensiklopedia") ||
-    teksGabung.includes("komputer")
+    teksGabung.includes("alam semesta") ||
+    teksGabung.includes("ensiklopedia")
   ) {
     const k = cariKategori("sains-populer") || cariNama("sains");
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "S-01" };
   }
 
-  // 12. JIKA SUMBER SIBI (BUKU PELAJARAN SEKOLAH) TAPI BELUM COCOK DENGAN MAPEL DI ATAS
+  // 18. NONFIKSI UMUM (Koleksi Bacaan Wawasan & Esai)
+  if (
+    teksGabung.includes("nonfiksi") ||
+    teksGabung.includes("non-fiction") ||
+    teksGabung.includes("nonfiction") ||
+    teksGabung.includes("esai") ||
+    teksGabung.includes("jurnalisme") ||
+    teksGabung.includes("panduan")
+  ) {
+    const k = cariKategori("nonfiksi-umum") || cariNama("nonfiksi");
+    if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "NF-01" };
+  }
+
+  // 19. JIKA SUMBER SIBI (BUKU PELAJARAN SEKOLAH) TAPI BELUM COCOK
   if (sumber === "kemendikbud_sibi") {
     const k =
       cariKategori("pelajaran-lainnya") ||
@@ -234,7 +387,7 @@ function petakanKategoriOtomatis(
     if (k) return { id: k.id, nama: k.nama, kelompok: k.kelompok, lokasiRakSaran: "P-08" };
   }
 
-  // 13. NOVEL / FIKSI UMUM (DEFAULT KELOMPOK HIBURAN)
+  // 20. DEFAULT BACAAN HIBURAN / NOVEL (Fiksi, Sastra)
   const katNovel =
     cariKategori("novel") ||
     cariNama("novel") ||

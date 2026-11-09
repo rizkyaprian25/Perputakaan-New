@@ -985,7 +985,7 @@ export default function AdminBukuPage() {
                 {/* Kolom Kiri: Pratinjau & Unggah Sampul Manual (Otomatis Kompresi WebP) */}
                 <div className="space-y-3">
                   <label className="block text-xs font-medium text-ink-muted">
-                    Sampul Buku (Rasio 2:3 • Auto WebP)
+                    Sampul Buku (Rasio 2:3)
                   </label>
 
                   {/* Input berkas tersembunyi */}
@@ -1193,16 +1193,9 @@ export default function AdminBukuPage() {
                       />
                     </div>
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-medium text-ink-muted">
-                          Jml Halaman
-                        </label>
-                        {formSumber !== "manual" && formHalaman ? (
-                          <span className="text-[10px] text-status-tersedia font-semibold bg-status-tersedia/10 px-1.5 py-0.2 rounded">
-                            Auto API
-                          </span>
-                        ) : null}
-                      </div>
+                      <label className="block text-xs font-medium text-ink-muted mb-1">
+                        Jml Halaman
+                      </label>
                       <input
                         type="number"
                         value={formHalaman}
@@ -1216,16 +1209,9 @@ export default function AdminBukuPage() {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-medium text-ink-muted">
-                        Kategori Buku *
-                      </label>
-                      {formSumber !== "manual" && formKategoriId ? (
-                        <span className="text-[10px] text-status-tersedia font-semibold bg-status-tersedia/10 px-1.5 py-0.2 rounded">
-                          Auto Match
-                        </span>
-                      ) : null}
-                    </div>
+                    <label className="block text-xs font-medium text-ink-muted mb-1">
+                      Kategori Buku *
+                    </label>
                     <select
                       value={formKategoriId}
                       onChange={(e) => setFormKategoriId(e.target.value)}
@@ -1240,15 +1226,10 @@ export default function AdminBukuPage() {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-ink flex items-center gap-1">
-                        <span>Lokasi Rak Fisik</span>
-                        <span className="text-danger">*</span>
-                      </label>
-                      <span className="text-[10px] text-ink-muted italic">
-                        Diisi / disesuaikan admin
-                      </span>
-                    </div>
+                    <label className="block text-xs font-bold text-ink flex items-center gap-1 mb-1">
+                      <span>Lokasi Rak Fisik</span>
+                      <span className="text-danger">*</span>
+                    </label>
                     <input
                       ref={refInputLokasiRak}
                       type="text"
@@ -1283,16 +1264,9 @@ export default function AdminBukuPage() {
                   )}
 
                   <div className="col-span-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-medium text-ink-muted">
-                        Sinopsis / Ringkasan Isi Buku
-                      </label>
-                      {formSumber !== "manual" && formSinopsis ? (
-                        <span className="text-[10px] text-status-tersedia font-semibold bg-status-tersedia/10 px-1.5 py-0.2 rounded">
-                          Auto Sinopsis
-                        </span>
-                      ) : null}
-                    </div>
+                    <label className="block text-xs font-medium text-ink-muted mb-1">
+                      Sinopsis / Ringkasan Isi Buku
+                    </label>
                     <textarea
                       rows={3}
                       value={formSinopsis}
