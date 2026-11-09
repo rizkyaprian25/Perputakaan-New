@@ -24,7 +24,6 @@ import {
   Library,
   GalleryHorizontalEnd,
   CheckCircle2,
-  Sparkles,
 } from "lucide-react";
 
 interface BookshelfCatalogProps {
@@ -178,7 +177,6 @@ export function BookshelfCatalog({
   const [filterKelompok, setFilterKelompok] = useState<"semua" | "hiburan" | "pelajaran">("semua");
   const [filterHanyaTersedia, setFilterHanyaTersedia] = useState(false);
   const [selectedBook, setSelectedBook] = useState<ItemKatalogPublik | null>(null);
-  const [hoveredBook, setHoveredBook] = useState<ItemKatalogPublik | null>(null);
 
   // Ingat preferensi tampilan rak pengguna
   useEffect(() => {
@@ -427,31 +425,6 @@ export function BookshelfCatalog({
                 <span>Hanya yang Ada di Rak</span>
               </button>
             </div>
-
-            {/* Ticker Pratinjau Buku yang Sedang Disorot Mouse (Landscape Status Preview) */}
-            <div className="hidden md:flex items-center gap-2 font-mono text-[11px] text-ink-muted truncate max-w-md">
-              {hoveredBook ? (
-                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-paper-sunken border border-line text-ink animate-fade-in">
-                  <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${
-                      hoveredBook.tersediaEksemplar > 0 ? "bg-status-tersedia" : "bg-danger"
-                    }`}
-                  />
-                  <strong className="font-sans font-bold truncate max-w-[200px]">
-                    {hoveredBook.judul}
-                  </strong>
-                  <span>• {hoveredBook.lokasiRak || "Rak Utama"}</span>
-                  <span className="text-status-tersedia font-bold">
-                    ({hoveredBook.tersediaEksemplar}/{hoveredBook.totalEksemplar} tersedia)
-                  </span>
-                </div>
-              ) : (
-                <span>
-                  <Sparkles className="w-3.5 h-3.5 inline mr-1 text-amber-600" />
-                  Arahkan kursor ke buku di rak untuk mengintip, klik untuk membuka rincian & sinopsis.
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
@@ -592,8 +565,6 @@ export function BookshelfCatalog({
                               key={bukuItem.id}
                               type="button"
                               onClick={() => setSelectedBook(bukuItem)}
-                              onMouseEnter={() => setHoveredBook(bukuItem)}
-                              onMouseLeave={() => setHoveredBook(null)}
                               style={{
                                 height: `${tinggiPx}px`,
                                 width: `${lebarPx}px`,
@@ -677,8 +648,6 @@ export function BookshelfCatalog({
                               key={bukuItem.id}
                               type="button"
                               onClick={() => setSelectedBook(bukuItem)}
-                              onMouseEnter={() => setHoveredBook(bukuItem)}
-                              onMouseLeave={() => setHoveredBook(null)}
                               className="faceout-book-item group relative shrink-0 w-[118px] sm:w-[130px] rounded-t-md overflow-hidden cursor-pointer text-left bg-surface"
                             >
                               <BookCover
