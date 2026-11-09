@@ -12,9 +12,57 @@ interface KunjunganItem {
   jam: string;
 }
 
-export default function KioskPage() {
+// Komponen Jam Digital Mandiri agar interval 1 detik tidak memicu re-render komponen kamera/kiosk utama
+function JamDigitalKiosk() {
   const [jamDigital, setJamDigital] = useState<string>("");
   const [tanggalLengkap, setTanggalLengkap] = useState<string>("");
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setJamDigital(
+        now.toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      );
+      setTanggalLengkap(
+        now.toLocaleDateString("id-ID", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      );
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center justify-between pb-6 border-b border-line">
+      <div>
+        <span className="font-mono text-xs uppercase tracking-wider text-ink-muted block">
+          Waktu Indonesia Barat
+        </span>
+        <div className="font-mono text-6xl font-extrabold tracking-tight text-ink tabular-nums">
+          {jamDigital || "--:--:--"}
+        </div>
+      </div>
+      <div className="text-right">
+        <span className="font-mono text-xs text-status-tersedia font-semibold uppercase block">
+          Presensi Pengunjung
+        </span>
+        <p className="font-serif text-lg text-ink font-semibold mt-1">{tanggalLengkap}</p>
+      </div>
+    </div>
+  );
+}
+
+export default function KioskPage() {
   const [nomorInduk, setNomorInduk] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -97,32 +145,6 @@ export default function KioskPage() {
     };
     window.addEventListener("netri:data-mutated", handlePwaMutation);
     return () => window.removeEventListener("netri:data-mutated", handlePwaMutation);
-  }, []);
-
-  // Update Jam Real-Time WIB
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setJamDigital(
-        now.toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-      );
-      setTanggalLengkap(
-        now.toLocaleDateString("id-ID", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      );
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
   }, []);
 
   // Autofocus input untuk Scanner Barcode / QR USB (Keyboard Wedge)
@@ -223,23 +245,8 @@ export default function KioskPage() {
       <div className="grid grid-cols-12 gap-8 items-stretch">
         {/* Kolom Kiri (7 Kolom): Jam Raksasa & Viewfinder Scanner */}
         <div className="col-span-7 flex flex-col justify-between gap-6 bg-surface border border-line rounded-2xl p-8 shadow-sm">
-          {/* Jam Digital Kiosk */}
-          <div className="flex items-center justify-between pb-6 border-b border-line">
-            <div>
-              <span className="font-mono text-xs uppercase tracking-wider text-ink-muted block">
-                Waktu Indonesia Barat
-              </span>
-              <div className="font-mono text-6xl font-extrabold tracking-tight text-ink tabular-nums">
-                {jamDigital || "--:--:--"}
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="font-mono text-xs text-status-tersedia font-semibold uppercase block">
-                Presensi Pengunjung
-              </span>
-              <p className="font-serif text-lg text-ink font-semibold mt-1">{tanggalLengkap}</p>
-            </div>
-          </div>
+          {/* Jam Digital Kiosk (Terisolasi dari Re-render Kamera) */}
+          <JamDigitalKiosk />
 
           {/* Bingkai Pemindai Kartu QR (Viewfinder / Kamera Webcam Live) */}
           <div className="space-y-3">
