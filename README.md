@@ -74,6 +74,18 @@ npm run dev
 npm run build
 npm run start
 ```
+
+---
+
+## Panduan Server Windows & Dual-Monitor (Admin + Kiosk)
+
+Untuk panduan lengkap setup server lokal sekolah menggunakan **1 Komputer dengan 2 Layar Monitor** (Monitor 1: Meja Admin & Monitor 2: Kiosk Absensi Siswa Fullscreen) serta konfigurasi pemulihan otomatis saat listrik padam (*Zero-Touch Auto-Boot*), baca dokumen resmi:
+👉 **[PANDUAN_SERVER_WINDOWS_DUAL_MONITOR.md](file:///e:/Web/Perputakaan%20New/PANDUAN_SERVER_WINDOWS_DUAL_MONITOR.md)**
+
+Skrip otomasi siap pakai yang disediakan di folder `scripts/`:
+- `scripts/netri-dual-display.bat`: Membuka Monitor 1 (Admin) & Monitor 2 (Kiosk Fullscreen) dengan profil browser terisolasi.
+- `scripts/pasang-service-windows.bat`: Mendaftarkan server Next.js sebagai Windows Service otomatis via NSSM.
+- `scripts/cek-kesehatan-server.bat`: Pengujian diagnostik instan port 3306 (MySQL), 3000 (Next.js), dan status layar ganda.
 Aplikasi dapat diakses melalui peramban:
 - **Katalog Publik:** `http://localhost:3000`
 - **Kiosk Presensi:** `http://localhost:3000/kiosk`
