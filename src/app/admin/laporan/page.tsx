@@ -99,11 +99,30 @@ export default function AdminLaporanPage() {
     link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
-      `Laporan_Sirkulasi_BilikBaca_${new Date().toISOString().slice(0, 10)}.csv`
+      `Laporan_Sirkulasi_Perpustakaan_NETRI_${new Date().toISOString().slice(0, 10)}.csv`
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Cetak Laporan dengan Nama File PDF Dinamis sesuai Tab Aktif
+  const handleCetakLaporanPdf = () => {
+    const judulAsli = document.title;
+    const tgl = new Date().toISOString().slice(0, 10);
+    const labelTab =
+      tabAktif === "sirkulasi"
+        ? "Sirkulasi_Buku"
+        : tabAktif === "kunjungan"
+        ? "Kunjungan_Kelas"
+        : "Peringkat_Literasi";
+    document.title = `Laporan_${labelTab}_Perpustakaan_NETRI_${tgl}`;
+    const kembalikanJudul = () => {
+      document.title = judulAsli;
+      window.removeEventListener("afterprint", kembalikanJudul);
+    };
+    window.addEventListener("afterprint", kembalikanJudul);
+    window.print();
   };
 
   // Ekspor Rekap Kunjungan Kiosk ke CSV
@@ -125,7 +144,7 @@ export default function AdminLaporanPage() {
     link.setAttribute("href", encodedUri);
     link.setAttribute(
       "download",
-      `Rekap_Kunjungan_Kelas_${new Date().toISOString().slice(0, 10)}.csv`
+      `Rekap_Kunjungan_Kelas_Perpustakaan_NETRI_${new Date().toISOString().slice(0, 10)}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -165,7 +184,7 @@ export default function AdminLaporanPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => window.print()}
+            onClick={handleCetakLaporanPdf}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[44px]"
           >
             <Printer className="w-4 h-4 text-ink-muted" />

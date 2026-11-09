@@ -21,7 +21,16 @@ function CetakStrukContent() {
       // Ambil data struk dari sessionStorage yang disimpan saat transaksi berhasil
       const dataRaw = sessionStorage.getItem("bilikbaca_last_struk");
       if (dataRaw) {
-        setStruk(JSON.parse(dataRaw));
+        const parsed = JSON.parse(dataRaw);
+        setStruk(parsed);
+        const bersihkan = (str: string) =>
+          String(str || "")
+            .trim()
+            .replace(/[\\/:*?"<>|]+/g, "")
+            .replace(/\s+/g, "_")
+            .slice(0, 45);
+        const tgl = new Date().toISOString().slice(0, 10);
+        document.title = `Struk_Pinjam_${bersihkan(parsed.namaPeminjam || "Siswa")}_${bersihkan(parsed.kelas || "Umum")}_${tgl}`;
       }
     } catch (e) {
       console.error(e);

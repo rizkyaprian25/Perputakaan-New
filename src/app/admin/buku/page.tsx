@@ -92,11 +92,29 @@ export default function AdminBukuPage() {
     setTimeout(() => setToast(null), 4500);
   };
 
-  // Fungsi Cetak Bersih: Mengisolasi Dokumen dan Menghilangkan 100% Elemen Background
+  // Fungsi Cetak Bersih: Mengisolasi Dokumen, Menghilangkan 100% Elemen Background, & Nama File PDF Dinamis
   const cetakStikerTerisolasi = () => {
+    const judulAsli = document.title;
+    const bersihkan = (str: string) =>
+      String(str || "")
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, "")
+        .replace(/\s+/g, "_")
+        .slice(0, 55);
+
+    const daftarAktif = eksemplarCetakTerpilih || daftarEksemplarAktif;
+    if (detailBukuAktif) {
+      if (daftarAktif.length === 1) {
+        document.title = `Stiker_QR_${bersihkan(daftarAktif[0].kode)}_${bersihkan(detailBukuAktif.judul)}`;
+      } else {
+        document.title = `Stiker_QR_Buku_${bersihkan(detailBukuAktif.judul)}_${daftarAktif.length}_Eksemplar`;
+      }
+    }
+
     document.body.setAttribute("data-print-mode", "stiker");
     const bersihkanSetelahCetak = () => {
       document.body.removeAttribute("data-print-mode");
+      document.title = judulAsli;
       window.removeEventListener("afterprint", bersihkanSetelahCetak);
     };
     window.addEventListener("afterprint", bersihkanSetelahCetak);

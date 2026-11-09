@@ -137,6 +137,49 @@ function CetakKartuSiswaContent() {
     return anggotaTerfilter.filter((a) => idTerpilih.has(a.id));
   }, [anggotaTerfilter, idTerpilih]);
 
+  // Nama berkas PDF dinamis sesuai konteks cetak (1 Siswa vs Per Kelas vs Massal)
+  const namaBerkasCetak = useMemo(() => {
+    const bersihkan = (str: string) =>
+      str
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, "")
+        .replace(/\s+/g, "_")
+        .slice(0, 60);
+
+    if (anggotaSiapCetak.length === 1) {
+      const s = anggotaSiapCetak[0];
+      const kls = s.kelas ? bersihkan(s.kelas) : s.jenis.toUpperCase();
+      return `Kartu_Anggota_${bersihkan(s.nama)}_${kls}_${bersihkan(s.nomorInduk)}`;
+    }
+
+    if (anggotaSiapCetak.length > 1) {
+      const kelasSet = new Set(
+        anggotaSiapCetak.map((a) => (a.kelas || "Umum").trim())
+      );
+      if (kelasSet.size === 1) {
+        const klsTunggal = Array.from(kelasSet)[0];
+        return `Cetak_Massal_Kartu_Kelas_${bersihkan(klsTunggal)}_${anggotaSiapCetak.length}_Siswa`;
+      }
+      return `Cetak_Massal_Kartu_Anggota_NETRI_${anggotaSiapCetak.length}_Anggota`;
+    }
+
+    return "Kartu_Anggota_Perpustakaan_NETRI";
+  }, [anggotaSiapCetak]);
+
+  // Sinkronkan document.title agar Save as PDF otomatis menggunakan nama berkas yang sesuai
+  useEffect(() => {
+    const judulAsli = document.title;
+    document.title = namaBerkasCetak;
+    return () => {
+      document.title = judulAsli;
+    };
+  }, [namaBerkasCetak]);
+
+  const jalankanCetak = () => {
+    document.title = namaBerkasCetak;
+    window.print();
+  };
+
   // Saat ganti kelas di dropdown, otomatis centang seluruh siswa di kelas tersebut
   const handleGantiKelas = (kelasBaru: string) => {
     setModeCetak("massal");
@@ -186,11 +229,12 @@ function CetakKartuSiswaContent() {
   useEffect(() => {
     if (paramAutoPrint && !loading && anggotaSiapCetak.length > 0) {
       const timer = setTimeout(() => {
+        document.title = namaBerkasCetak;
         window.print();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [paramAutoPrint, loading, anggotaSiapCetak.length]);
+  }, [paramAutoPrint, loading, anggotaSiapCetak.length, namaBerkasCetak]);
 
   if (loading) {
     return (
@@ -249,6 +293,9 @@ function CetakKartuSiswaContent() {
               <p className="font-sans text-xs text-ink-muted">
                 Siap cetak <strong>{anggotaSiapCetak.length} kartu anggota</strong> (~{estimasiHalamanA4} lembar A4 • Ukuran 86mm x 54mm)
               </p>
+              <p className="font-mono text-[11px] text-status-tersedia mt-0.5">
+                Nama File PDF: <strong>{namaBerkasCetak}.pdf</strong>
+              </p>
             </div>
           </div>
 
@@ -266,7 +313,7 @@ function CetakKartuSiswaContent() {
             )}
 
             <button
-              onClick={() => window.print()}
+              onClick={jalankanCetak}
               disabled={anggotaSiapCetak.length === 0}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 shadow-sm disabled:opacity-40 transition-all min-h-[42px]"
             >

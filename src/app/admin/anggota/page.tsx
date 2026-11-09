@@ -94,11 +94,32 @@ export default function AdminAnggotaPage() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Fungsi Cetak Bersih Kartu Anggota: Menghilangkan 100% Elemen Web Latar Belakang
+  // Fungsi Cetak Bersih Kartu Anggota: Menghilangkan 100% Elemen Web Latar Belakang & Nama File Dinamis
   const cetakKartuTerisolasi = () => {
+    const judulAsli = document.title;
+    const bersihkan = (str: string) =>
+      String(str || "")
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, "")
+        .replace(/\s+/g, "_")
+        .slice(0, 55);
+
+    if (modalCetakBuka && selectedAnggota) {
+      const kls = selectedAnggota.kelas
+        ? bersihkan(selectedAnggota.kelas)
+        : String(selectedAnggota.jenis || "UMUM").toUpperCase();
+      document.title = `Kartu_Anggota_${bersihkan(selectedAnggota.nama)}_${kls}_${bersihkan(selectedAnggota.nomorInduk)}`;
+    } else if (modalCetakMassalBuka) {
+      document.title =
+        kelasDipilihCetak !== "semua"
+          ? `Cetak_Massal_Kartu_Kelas_${bersihkan(kelasDipilihCetak)}`
+          : "Cetak_Massal_Kartu_Anggota_Perpustakaan_NETRI";
+    }
+
     document.body.setAttribute("data-print-mode", "kartu");
     const bersihkanSetelahCetak = () => {
       document.body.removeAttribute("data-print-mode");
+      document.title = judulAsli;
       window.removeEventListener("afterprint", bersihkanSetelahCetak);
     };
     window.addEventListener("afterprint", bersihkanSetelahCetak);

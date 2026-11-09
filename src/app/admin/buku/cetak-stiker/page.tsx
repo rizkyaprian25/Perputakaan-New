@@ -124,6 +124,52 @@ function CetakStikerBukuContent() {
     return stikerTerfilter.filter((item) => idTerpilih.has(item.eksemplarId));
   }, [stikerTerfilter, idTerpilih]);
 
+  // Nama berkas PDF dinamis sesuai konteks cetak (1 Eksemplar vs 1 Judul Buku vs Massal)
+  const namaBerkasCetak = useMemo(() => {
+    const bersihkan = (str: string) =>
+      str
+        .trim()
+        .replace(/[\\/:*?"<>|]+/g, "")
+        .replace(/\s+/g, "_")
+        .slice(0, 55);
+
+    if (stikerSiapCetak.length === 1) {
+      const s = stikerSiapCetak[0];
+      return `Stiker_QR_${bersihkan(s.kode)}_${bersihkan(s.judul)}`;
+    }
+
+    if (stikerSiapCetak.length > 1) {
+      const bukuSet = new Set(stikerSiapCetak.map((s) => s.bukuId));
+      if (bukuSet.size === 1) {
+        const s = stikerSiapCetak[0];
+        return `Stiker_QR_Buku_${bersihkan(s.judul)}_${stikerSiapCetak.length}_Eksemplar`;
+      }
+      const labelKelompok =
+        filterKelompok === "pelajaran"
+          ? "Buku_Pelajaran"
+          : filterKelompok === "hiburan"
+          ? "Bacaan_Hiburan"
+          : "Semua_Koleksi";
+      return `Cetak_Massal_Stiker_QR_Buku_${labelKelompok}_${stikerSiapCetak.length}_Stiker`;
+    }
+
+    return "Stiker_QR_Buku_Perpustakaan_NETRI";
+  }, [stikerSiapCetak, filterKelompok]);
+
+  // Sinkronkan document.title agar Save as PDF otomatis menggunakan nama berkas yang sesuai
+  useEffect(() => {
+    const judulAsli = document.title;
+    document.title = namaBerkasCetak;
+    return () => {
+      document.title = judulAsli;
+    };
+  }, [namaBerkasCetak]);
+
+  const jalankanCetak = () => {
+    document.title = namaBerkasCetak;
+    window.print();
+  };
+
   // Saat pengguna mengganti dropdown Buku, otomatis centang semua eksemplar buku tersebut
   const handleGantiBuku = (bukuIdBaru: string) => {
     setFilterBukuId(bukuIdBaru);
@@ -172,11 +218,12 @@ function CetakStikerBukuContent() {
   useEffect(() => {
     if (paramAutoPrint && !loading && stikerSiapCetak.length > 0) {
       const timer = setTimeout(() => {
+        document.title = namaBerkasCetak;
         window.print();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [paramAutoPrint, loading, stikerSiapCetak.length]);
+  }, [paramAutoPrint, loading, stikerSiapCetak.length, namaBerkasCetak]);
 
   if (loading) {
     return (
@@ -233,11 +280,14 @@ function CetakStikerBukuContent() {
               <p className="font-sans text-xs text-ink-muted">
                 Siap cetak <strong>{stikerSiapCetak.length} stiker</strong> (~{estimasiHalamanA4} lembar A4 • 24 stiker/halaman)
               </p>
+              <p className="font-mono text-[11px] text-status-tersedia mt-0.5">
+                Nama File PDF: <strong>{namaBerkasCetak}.pdf</strong>
+              </p>
             </div>
           </div>
 
           <button
-            onClick={() => window.print()}
+            onClick={jalankanCetak}
             disabled={stikerSiapCetak.length === 0}
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-ink text-paper text-xs font-semibold hover:bg-ink/90 shadow-sm disabled:opacity-40 transition-all min-h-[42px]"
           >
