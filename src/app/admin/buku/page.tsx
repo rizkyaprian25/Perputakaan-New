@@ -64,6 +64,7 @@ export default function AdminBukuPage() {
     hematPersen: number;
   } | null>(null);
   const inputFileSampulRef = useRef<HTMLInputElement | null>(null);
+  const refInputLokasiRak = useRef<HTMLInputElement | null>(null);
 
   // Tambah Kategori Cepat
   const [modalKategoriBuka, setModalKategoriBuka] = useState(false);
@@ -296,25 +297,43 @@ export default function AdminBukuPage() {
     setFormPenerbit(item.penerbit || "");
     setFormTahun(item.tahunTerbit || "");
     setFormIsbn((item.isbn || "").replace(/[- ]+/g, ""));
+    setFormHalaman(item.jumlahHalaman || 180);
     setFormSinopsis(item.sinopsis || "");
     setFormSampulUrl(item.sampulUrl || "");
     setInfoKompresiSampul(null);
     setFormSumber(item.sumber || "google_books");
     setFormJumlahEksemplar(3);
 
-    // Otomatis arahkan ke kelompok pelajaran jika bersumber dari SIBI Kemendikbudristek
-    if (item.sumber === "kemendikbud_sibi") {
-      const katPelajaran = daftarKategori.find((k) => k.kelompok === "pelajaran");
-      if (katPelajaran) {
-        setFormKategoriId(katPelajaran.id);
-      }
-      setFormLokasiRak("P-01");
+    // Otomatis pilih kategori dari hasil pencocokan cerdas API eksternal
+    if (item.kategoriOtomatis?.id) {
+      setFormKategoriId(item.kategoriOtomatis.id);
     } else {
-      setFormLokasiRak("R-01");
+      const katCocok = daftarKategori.find(
+        (k) => k.nama.toLowerCase() === item.kategoriOtomatis?.nama?.toLowerCase()
+      );
+      if (katCocok) {
+        setFormKategoriId(katCocok.id);
+      } else if (item.sumber === "kemendikbud_sibi") {
+        const katPelajaran = daftarKategori.find((k) => k.kelompok === "pelajaran");
+        if (katPelajaran) setFormKategoriId(katPelajaran.id);
+      } else {
+        const katHiburan = daftarKategori.find((k) => k.kelompok === "hiburan") || daftarKategori[0];
+        if (katHiburan) setFormKategoriId(katHiburan.id);
+      }
     }
+
+    // Saran letak rak fisik otomatis sesuai kategori
+    setFormLokasiRak(item.lokasiRakSaran || "R-01");
 
     setModalOnlineBuka(false);
     setModalFormBuka(true);
+
+    // Kursor otomatis fokus dan select ke Lokasi Rak,
+    // karena SEMUA field lainnya sudah terisi 100% otomatis!
+    setTimeout(() => {
+      refInputLokasiRak.current?.focus();
+      refInputLokasiRak.current?.select();
+    }, 180);
 
     // Jika buku eksternal memiliki URL sampul, unduh & kompresi otomatis ke .webp lokal agar ringan
     if (item.sampulUrl && /^https?:\/\//i.test(item.sampulUrl)) {
@@ -333,9 +352,7 @@ export default function AdminBukuPage() {
             hematPersen: Number(json.data.hematPersen || 0),
           });
           tampilkanToast(
-            `Metadata '${item.judul}' disalin & sampul dikompresi ke WebP (${(
-              Number(json.data.ukuranWebpBytes || 0) / 1024
-            ).toFixed(1)} KB).`,
+            `Data '${item.judul}' terisi otomatis! Cukup tentukan letak rak buku.`,
             "sukses"
           );
           return;
@@ -347,7 +364,10 @@ export default function AdminBukuPage() {
       }
     }
 
-    tampilkanToast(`Metadata & sampul '${item.judul}' disalin ke formulir.`, "sukses");
+    tampilkanToast(
+      `Semua data '${item.judul}' terisi otomatis! Cukup tentukan letak rak buku.`,
+      "sukses"
+    );
   };
 
   // Simpan Buku (Tambah Baru atau Edit)
@@ -859,8 +879,39 @@ export default function AdminBukuPage() {
                         <p className="text-xs text-ink-muted">
                           Penulis: {item.penulis} • Penerbit: {item.penerbit} ({item.tahunTerbit || "-"})
                         </p>
+
+                        {/* Indikator Data Otomatis: Kategori, Halaman & Saran Rak */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {item.kategoriOtomatis && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink bg-paper-sunken border border-line px-2 py-0.5 rounded shadow-2xs">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  item.kategoriOtomatis.kelompok === "pelajaran"
+                                    ? "bg-group-pelajaran"
+                                    : "bg-group-hiburan"
+                                }`}
+                              />
+                              <span>
+                                {item.kategoriOtomatis.nama} ({item.kategoriOtomatis.kelompok})
+                              </span>
+                            </span>
+                          )}
+                          {item.jumlahHalaman ? (
+                            <span className="font-mono text-[11px] bg-paper-sunken px-2 py-0.5 rounded text-ink font-medium">
+                              {item.jumlahHalaman} Hal
+                            </span>
+                          ) : null}
+                          {item.lokasiRakSaran && (
+                            <span className="font-mono text-[11px] bg-paper-sunken px-2 py-0.5 rounded text-ink-muted">
+                              Saran Rak: <strong className="text-ink">{item.lokasiRakSaran}</strong>
+                            </span>
+                          )}
+                        </div>
+
                         {item.sinopsis && (
-                          <p className="text-xs text-ink-muted/80 line-clamp-2 leading-relaxed">{item.sinopsis}</p>
+                          <p className="text-xs text-ink-muted/80 line-clamp-2 leading-relaxed pt-0.5">
+                            {item.sinopsis}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -1142,9 +1193,16 @@ export default function AdminBukuPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-ink-muted mb-1">
-                        Jml Halaman
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-medium text-ink-muted">
+                          Jml Halaman
+                        </label>
+                        {formSumber !== "manual" && formHalaman ? (
+                          <span className="text-[10px] text-status-tersedia font-semibold bg-status-tersedia/10 px-1.5 py-0.2 rounded">
+                            Auto API
+                          </span>
+                        ) : null}
+                      </div>
                       <input
                         type="number"
                         value={formHalaman}
@@ -1152,19 +1210,26 @@ export default function AdminBukuPage() {
                           setFormHalaman(e.target.value ? Number(e.target.value) : "")
                         }
                         placeholder="320"
-                        className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink"
+                        className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink font-mono"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-ink-muted mb-1">
-                      Kategori Buku *
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-ink-muted">
+                        Kategori Buku *
+                      </label>
+                      {formSumber !== "manual" && formKategoriId ? (
+                        <span className="text-[10px] text-status-tersedia font-semibold bg-status-tersedia/10 px-1.5 py-0.2 rounded">
+                          Auto Match
+                        </span>
+                      ) : null}
+                    </div>
                     <select
                       value={formKategoriId}
                       onChange={(e) => setFormKategoriId(e.target.value)}
-                      className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink bg-white"
+                      className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink bg-white font-medium"
                     >
                       {daftarKategori.map((k) => (
                         <option key={k.id} value={k.id}>
@@ -1175,15 +1240,23 @@ export default function AdminBukuPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-ink-muted mb-1">
-                      Lokasi Rak
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-ink flex items-center gap-1">
+                        <span>Lokasi Rak Fisik</span>
+                        <span className="text-danger">*</span>
+                      </label>
+                      <span className="text-[10px] text-ink-muted italic">
+                        Diisi / disesuaikan admin
+                      </span>
+                    </div>
                     <input
+                      ref={refInputLokasiRak}
                       type="text"
+                      required
                       value={formLokasiRak}
                       onChange={(e) => setFormLokasiRak(e.target.value)}
-                      placeholder="Contoh: R-01-A"
-                      className="w-full px-3 py-2 rounded border border-line text-sm focus:border-ink font-mono"
+                      placeholder="Contoh: R-01, P-02, Rak Fiksi A"
+                      className="w-full px-3 py-2 rounded border-2 border-ink/40 text-sm focus:border-ink font-mono font-bold bg-white text-ink shadow-2xs"
                     />
                   </div>
 
@@ -1210,9 +1283,16 @@ export default function AdminBukuPage() {
                   )}
 
                   <div className="col-span-2">
-                    <label className="block text-xs font-medium text-ink-muted mb-1">
-                      Sinopsis / Ringkasan Isi Buku
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-ink-muted">
+                        Sinopsis / Ringkasan Isi Buku
+                      </label>
+                      {formSumber !== "manual" && formSinopsis ? (
+                        <span className="text-[10px] text-status-tersedia font-semibold bg-status-tersedia/10 px-1.5 py-0.2 rounded">
+                          Auto Sinopsis
+                        </span>
+                      ) : null}
+                    </div>
                     <textarea
                       rows={3}
                       value={formSinopsis}
