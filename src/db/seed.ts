@@ -149,45 +149,7 @@ async function main() {
     }
   }
 
-  // 5. Seeding Contoh Anggota Siswa & Guru
-  console.log("-> Seeding contoh anggota siswa & guru...");
-  const anggotaData = [
-    {
-      id: ulid(),
-      nomorInduk: "202407001",
-      nama: "Ahmad Fauzi",
-      jenis: "siswa" as const,
-      kelas: "VII-A",
-      qrToken: "PUS1A_202407001_FAUZI99",
-      status: "aktif" as const,
-    },
-    {
-      id: ulid(),
-      nomorInduk: "202407002",
-      nama: "Siti Rahmawati",
-      jenis: "siswa" as const,
-      kelas: "VII-A",
-      qrToken: "PUS1A_202407002_RAHMA88",
-      status: "aktif" as const,
-    },
-    {
-      id: ulid(),
-      nomorInduk: "198501152010011005",
-      nama: "Budi Santoso, S.Pd.",
-      jenis: "guru" as const,
-      kelas: null,
-      qrToken: "PUS1A_19850115_BUDI777",
-      status: "aktif" as const,
-    },
-  ];
-
-  for (const ang of anggotaData) {
-    await db
-      .insert(anggota)
-      .values(ang)
-      .onDuplicateKeyUpdate({ set: { nama: ang.nama } });
-  }
-
+  // 5. Data anggota siswa asli disinkronkan langsung dari Netri SMS (tidak menyisipkan anggota dummy)
   console.log("✅ Seeding basis data Perpustakaan NETRI selesai dengan sempurna!");
 }
 
