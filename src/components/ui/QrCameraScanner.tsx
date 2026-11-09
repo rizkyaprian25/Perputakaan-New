@@ -31,6 +31,18 @@ export function QrCameraScanner({
   const detectorRef = useRef<any>(null);
   const timerScanRef = useRef<any>(null);
   const terakhirScannedRef = useRef<{ kode: string; waktu: number }>({ kode: "", waktu: 0 });
+  const isMountedRef = useRef<boolean>(false);
+
+  // Simpan callback terbaru di dalam ref agar mulaiKamera tidak pernah dipicu ulang saat parent re-render
+  const onScanRef = useRef(onScan);
+  const onCloseRef = useRef(onClose);
+  const autoStopRef = useRef(autoStopOnScan);
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onCloseRef.current = onClose;
+    autoStopRef.current = autoStopOnScan;
+  }, [onScan, onClose, autoStopOnScan]);
 
   // Fungsi membunyikan beep singkat via Web Audio API saat scan berhasil
   const bunyikanBeep = () => {
@@ -56,11 +68,19 @@ export function QrCameraScanner({
     }
   };
 
-  // Hentikan stream kamera
+  // Hentikan stream kamera secara bersih
   const hentikanKamera = useCallback(() => {
     if (timerScanRef.current) {
       clearInterval(timerScanRef.current);
       timerScanRef.current = null;
+    }
+    if (videoRef.current) {
+      try {
+        videoRef.current.pause();
+        videoRef.current.srcObject = null;
+      } catch {
+        // Abaikan
+      }
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
@@ -69,9 +89,10 @@ export function QrCameraScanner({
     setAktif(false);
   }, []);
 
-  // Mulai stream kamera
+  // Mulai stream kamera (stabil, tidak bergantung pada inline props parent)
   const mulaiKamera = useCallback(async () => {
     setErrorMsg(null);
+    hentikanKamera();
 
     // Cek ketersediaan BarcodeDetector API
     if (typeof window !== "undefined" && "BarcodeDetector" in window) {
@@ -96,12 +117,27 @@ export function QrCameraScanner({
         audio: false,
       });
 
+      // Jika komponen sudah di-unmount saat menunggu izin kamera, segera matikan tracks
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch (playErr: any) {
+          // Abaikan AbortError yang wajar terjadi saat stream diganti atau komponen ditutup cepat
+          if (playErr?.name === "AbortError") {
+            return;
+          }
+          throw playErr;
+        }
       }
 
+      if (!isMountedRef.current) return;
       setAktif(true);
 
       // Loop deteksi frame video setiap 200 ms
@@ -126,11 +162,11 @@ export function QrCameraScanner({
 
               terakhirScannedRef.current = { kode: rawValue, waktu: now };
               bunyikanBeep();
-              onScan(rawValue);
+              onScanRef.current(rawValue);
 
-              if (autoStopOnScan) {
+              if (autoStopRef.current) {
                 hentikanKamera();
-                if (onClose) onClose();
+                if (onCloseRef.current) onCloseRef.current();
               }
             }
           }
@@ -139,7 +175,10 @@ export function QrCameraScanner({
         }
       }, 200);
     } catch (err: any) {
-      console.error("Gagal menyalakan webcam:", err);
+      if (err?.name === "AbortError" || !isMountedRef.current) {
+        return;
+      }
+      console.warn("Kamera tidak dapat diaktifkan:", err);
       setErrorMsg(
         err.name === "NotAllowedError"
           ? "Izin akses kamera ditolak oleh browser. Mohon izinkan akses kamera di bilah alamat browser."
@@ -147,11 +186,13 @@ export function QrCameraScanner({
       );
       hentikanKamera();
     }
-  }, [onScan, autoStopOnScan, hentikanKamera, onClose]);
+  }, [hentikanKamera]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     mulaiKamera();
     return () => {
+      isMountedRef.current = false;
       hentikanKamera();
     };
   }, [mulaiKamera, hentikanKamera]);
