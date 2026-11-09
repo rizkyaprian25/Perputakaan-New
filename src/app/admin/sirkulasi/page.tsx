@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Camera,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { QrCameraScanner } from "@/components/ui/QrCameraScanner";
 import { siarkanSinkronisasiPwa } from "@/components/ui/PwaSyncProvider";
@@ -45,6 +46,7 @@ interface ItemBukuKeranjang {
 
 interface PinjamanAktifItem {
   id: string;
+  batchId?: string | null;
   dipinjamPada: string;
   jatuhTempo: string;
   perpanjanganKe: number;
@@ -65,6 +67,7 @@ interface PinjamanAktifItem {
 }
 
 interface BuktiStrukPinjam {
+  peminjamanId?: string;
   batchId: string;
   namaPeminjam: string;
   nomorInduk: string;
@@ -72,7 +75,9 @@ interface BuktiStrukPinjam {
   jumlahBuku: number;
   dipinjamPada: string;
   jatuhTempo: string;
-  daftarBuku: Array<{ kode: string; judul: string }>;
+  daftarBuku: Array<{ kode: string; judul: string; lokasiRak?: string }>;
+  namaPetugas?: string;
+  isAktif?: boolean;
 }
 
 export default function SirkulasiWorkstationPage() {
@@ -101,6 +106,7 @@ export default function SirkulasiWorkstationPage() {
   const [cariAktif, setCariAktif] = useState("");
   const [filterAktif, setFilterAktif] = useState<"semua" | "terlambat">("semua");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [loadingStrukId, setLoadingStrukId] = useState<string | null>(null);
 
   // Modal Kamera Live Scanner
   const [modalKamera, setModalKamera] = useState<"anggota" | "buku" | "kembali" | null>(null);
@@ -119,13 +125,54 @@ export default function SirkulasiWorkstationPage() {
 
   // Fungsi Cetak Bersih Slip Sirkulasi: Mengisolasi 100% Elemen Layar Komputer
   const cetakStrukTerisolasi = () => {
+    const judulAsli = document.title;
+    if (strukPinjam) {
+      const bersihkan = (str: string) =>
+        String(str || "")
+          .trim()
+          .replace(/[\\/:*?"<>|]+/g, "")
+          .replace(/\s+/g, "_")
+          .slice(0, 45);
+      const tgl = new Date().toISOString().slice(0, 10);
+      document.title = `Struk_Pinjam_${bersihkan(strukPinjam.namaPeminjam || "Siswa")}_${bersihkan(strukPinjam.kelas || "Umum")}_${tgl}`;
+    }
     document.body.setAttribute("data-print-mode", "struk");
     const bersihkanSetelahCetak = () => {
       document.body.removeAttribute("data-print-mode");
+      document.title = judulAsli;
       window.removeEventListener("afterprint", bersihkanSetelahCetak);
     };
     window.addEventListener("afterprint", bersihkanSetelahCetak);
     window.print();
+  };
+
+  // Ambil data struk peminjaman dari API untuk dicetak dari tabel pinjaman aktif
+  const handleBukaStrukDariTabel = async (item: PinjamanAktifItem) => {
+    setLoadingStrukId(item.id);
+    try {
+      const params = new URLSearchParams();
+      params.set("id", item.id);
+      if (item.batchId) params.set("batchId", item.batchId);
+      params.set("eksemplarKode", item.kodeEksemplar);
+
+      const res = await fetch(`/api/v1/admin/sirkulasi/struk?${params.toString()}`);
+      const json = await res.json();
+
+      if (!res.ok || !json.sukses) {
+        throw new Error(json.pesan || "Gagal mengambil data struk peminjaman");
+      }
+
+      setStrukPinjam(json.data);
+      try {
+        sessionStorage.setItem("bilikbaca_last_struk", JSON.stringify(json.data));
+      } catch (e) {
+        console.warn("Gagal menyimpan ke sessionStorage:", e);
+      }
+    } catch (err: any) {
+      tampilkanNotif(err.message, "error");
+    } finally {
+      setLoadingStrukId(null);
+    }
   };
 
   // Muat daftar peminjaman aktif
@@ -495,8 +542,10 @@ export default function SirkulasiWorkstationPage() {
 
   return (
     <div className="space-y-6 max-w-[1440px] sirkulasi-view">
-      {/* Toast Notifikasi */}
-      {notif && (
+      {/* Konten Antarmuka Layar Meja Sirkulasi (Disembunyikan 100% saat Mode Cetak Struk) */}
+      <div className="sirkulasi-screen-content space-y-6 print:hidden">
+        {/* Toast Notifikasi */}
+        {notif && (
         <div
           className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-lg shadow-lg border flex items-center gap-3 text-sm font-medium animate-fade-in print:hidden ${
             notif.tipe === "sukses"
@@ -1009,7 +1058,20 @@ export default function SirkulasiWorkstationPage() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <div className="inline-flex items-center gap-2">
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleBukaStrukDariTabel(item)}
+                          disabled={loadingStrukId === item.id}
+                          title="Cetak struk / bukti peminjaman buku ini"
+                          className="px-2.5 py-1.5 rounded border border-line bg-white hover:bg-paper-sunken text-ink font-semibold inline-flex items-center gap-1 shadow-2xs text-xs min-h-[32px] disabled:opacity-50"
+                        >
+                          {loadingStrukId === item.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Printer className="w-3.5 h-3.5 text-status-tersedia" />
+                          )}
+                          <span>Cetak Struk</span>
+                        </button>
                         <button
                           onClick={() => handlePerpanjangPinjam(item.id)}
                           disabled={
@@ -1024,7 +1086,7 @@ export default function SirkulasiWorkstationPage() {
                               ? "Sudah mencapai batas perpanjangan 1x"
                               : "Perpanjang masa pinjam +7 hari"
                           }
-                          className="px-2.5 py-1.5 rounded border border-line bg-white hover:bg-paper-sunken text-ink font-medium inline-flex items-center gap-1 disabled:opacity-40"
+                          className="px-2.5 py-1.5 rounded border border-line bg-white hover:bg-paper-sunken text-ink font-medium inline-flex items-center gap-1 disabled:opacity-40 min-h-[32px] text-xs"
                         >
                           <Calendar className="w-3.5 h-3.5" />
                           <span>+7 Hari</span>
@@ -1032,7 +1094,7 @@ export default function SirkulasiWorkstationPage() {
                         <button
                           onClick={() => prosesKembalikanKode(item.kodeEksemplar)}
                           disabled={loadingKembali}
-                          className="px-2.5 py-1.5 rounded bg-ink text-paper hover:bg-ink/90 font-semibold inline-flex items-center gap-1"
+                          className="px-2.5 py-1.5 rounded bg-ink text-paper hover:bg-ink/90 font-semibold inline-flex items-center gap-1 min-h-[32px] text-xs"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Kembalikan</span>
@@ -1046,12 +1108,13 @@ export default function SirkulasiWorkstationPage() {
           </table>
         </div>
       </div>
+      </div>
 
       {/* ========================================================================= */}
       {/* MODAL STRUK BUKTI PEMINJAMAN (FORMAT THERMAL 80MM / SLIP RESMI)           */}
       {/* ========================================================================= */}
       {strukPinjam && (
-        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4 print:p-0 print:bg-white print:static print:block">
+        <div className="fixed inset-0 z-50 bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4 print:p-0 print:bg-white print:static print:block sirkulasi-struk-modal">
           <div className="bg-surface border border-line rounded-xl max-w-md w-full p-6 shadow-xl space-y-4 print:border-none print:shadow-none print:p-0 print:max-w-none">
             {/* Header Modal - Tersembunyi saat Cetak */}
             <div className="flex items-center justify-between border-b border-line pb-3 print:hidden">
@@ -1137,8 +1200,8 @@ export default function SirkulasiWorkstationPage() {
                   <div>
                     <p className="text-gray-600">Petugas Jaga,</p>
                     <div className="h-10 print:h-8" />
-                    <p className="font-bold border-t border-black/60 pt-0.5">
-                      Perpustakaan NETRI
+                    <p className="font-bold border-t border-black/60 pt-0.5 truncate">
+                      {strukPinjam.namaPetugas || "Perpustakaan NETRI"}
                     </p>
                   </div>
                 </div>
@@ -1154,7 +1217,7 @@ export default function SirkulasiWorkstationPage() {
                 Tutup
               </button>
               <a
-                href="/admin/sirkulasi/cetak-struk"
+                href={`/admin/sirkulasi/cetak-struk?id=${strukPinjam.peminjamanId || ""}&batchId=${strukPinjam.batchId || ""}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-line bg-white hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[40px] shadow-xs"

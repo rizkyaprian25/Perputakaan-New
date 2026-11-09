@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     const [rows]: any = await pool.query(
       `SELECT 
          p.id,
+         p.batch_id as batchId,
          p.dipinjam_pada as dipinjamPada,
          p.jatuh_tempo as jatuhTempo,
          p.perpanjangan_ke as perpanjanganKe,

@@ -270,17 +270,26 @@
 
   /* ISOLASI TOTAL: Jika sedang mencetak dokumen berlabel printable-area,
      sembunyikan SELURUH elemen lain di halaman secara agresif */
-  body[data-print-mode="stiker"] .katalog-view,
   body[data-print-mode="stiker"] .katalog-header,
   body[data-print-mode="stiker"] .katalog-table,
-  body[data-print-mode="kartu"] .anggota-view,
+  body[data-print-mode="kartu"] .anggota-header,
   body[data-print-mode="kartu"] .anggota-table,
-  body[data-print-mode="struk"] .sirkulasi-view,
-  body[data-print-mode="struk"] .sirkulasi-table {
+  body[data-print-mode="struk"] .sirkulasi-screen-content,
+  body[data-print-mode="struk"] .sirkulasi-header,
+  body[data-print-mode="struk"] .sirkulasi-table,
+  body[data-print-mode="struk"] .sirkulasi-forms {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
     overflow: hidden !important;
+  }
+
+  body[data-print-mode="struk"] .sirkulasi-struk-modal {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
   /* Matikan bayangan kartu, blur backdrop modal, dan animasi */
