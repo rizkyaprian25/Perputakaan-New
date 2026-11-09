@@ -3,7 +3,8 @@ import { ArrowRight, BookOpen, Sparkles, GraduationCap, Compass, Search, X, Chec
 import { db } from "@/db";
 import { buku, kategori, eksemplar } from "@/db/schema";
 import { eq, sql, and, or } from "drizzle-orm";
-import { BookCatalogGrid, ItemKatalogPublik } from "@/components/ui/BookCatalogGrid";
+import { ItemKatalogPublik } from "@/components/ui/BookCatalogGrid";
+import { BookshelfCatalog } from "@/components/ui/BookshelfCatalog";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,7 @@ export default async function KatalogBerandaPage({ searchParams }: KatalogBerand
         kategori.kelompok,
         kategori.nama
       )
-      .limit(queryPencarian ? 60 : 12);
+      .limit(80);
 
     let mappedBooks = rawBooks.map((b) => ({
       id: b.id,
@@ -272,7 +273,12 @@ export default async function KatalogBerandaPage({ searchParams }: KatalogBerand
             )}
           </div>
         ) : (
-          <BookCatalogGrid items={daftarBuku} />
+          <BookshelfCatalog
+            items={daftarBuku}
+            defaultViewMode="spines"
+            showGroupFilter={true}
+            judulLemari="Filter Lemari"
+          />
         )}
       </section>
     </div>

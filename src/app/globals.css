@@ -114,6 +114,111 @@
   animation: netriPulseRing 2.2s infinite;
 }
 
+/* ========================================================================= */
+/* ESTETIKA LEMARI BUKU DIGITAL WIDESCREEN LANDSCAPE (OTIUM BOOKSHELF STYLE) */
+/* ========================================================================= */
+.bookcase-wall-landscape {
+  background: linear-gradient(180deg, #F6F1E6 0%, #EFE8D8 100%);
+  border: 1.5px solid #DED4C1;
+  box-shadow:
+    0 20px 45px -15px rgba(20, 19, 18, 0.10),
+    0 4px 12px -2px rgba(20, 19, 18, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.bookshelf-bay-alcove {
+  background: linear-gradient(180deg, #DFD6C3 0%, #E7DFCE 22%, #EDE6D8 88%, #E2D9C5 100%);
+  border: 1px solid #D1C5AE;
+  box-shadow:
+    inset 0 10px 18px -8px rgba(45, 36, 24, 0.18),
+    inset 6px 0 12px -6px rgba(45, 36, 24, 0.10),
+    inset -6px 0 12px -6px rgba(45, 36, 24, 0.10);
+}
+
+.shelf-header-pill {
+  background: linear-gradient(180deg, #F4EFE4 0%, #EBE3D3 100%);
+  border: 1px solid #D8CEB8;
+  box-shadow:
+    0 2px 4px rgba(45, 36, 24, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.wooden-plank-3d {
+  height: 18px;
+  background: linear-gradient(
+    180deg,
+    #CFA375 0%,
+    #B68454 18%,
+    #9C6B3B 62%,
+    #7B5027 88%,
+    #633E1B 100%
+  );
+  border-top: 1px solid rgba(255, 236, 209, 0.55);
+  border-bottom: 2px solid #523214;
+  box-shadow:
+    0 8px 14px -3px rgba(38, 25, 12, 0.32),
+    0 3px 5px -1px rgba(38, 25, 12, 0.22);
+  position: relative;
+}
+
+.wooden-plank-3d::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 38px,
+    rgba(60, 35, 12, 0.06) 39px,
+    transparent 40px
+  );
+  pointer-events: none;
+}
+
+.spine-book-item {
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 180ms ease;
+  box-shadow:
+    inset 3px 0 5px rgba(255, 255, 255, 0.22),
+    inset -3px 0 6px rgba(0, 0, 0, 0.32),
+    2px 0 5px rgba(20, 19, 18, 0.22),
+    -1px 0 3px rgba(20, 19, 18, 0.14);
+}
+
+.spine-book-item:hover {
+  transform: translateY(-14px) scale(1.03);
+  z-index: 30;
+  box-shadow:
+    inset 3px 0 6px rgba(255, 255, 255, 0.30),
+    inset -3px 0 6px rgba(0, 0, 0, 0.35),
+    0 14px 22px -4px rgba(20, 19, 18, 0.38),
+    0 4px 8px -2px rgba(20, 19, 18, 0.22);
+}
+
+.spine-vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.faceout-book-item {
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow:
+    0 6px 14px -3px rgba(20, 19, 18, 0.28),
+    -2px 0 5px rgba(20, 19, 18, 0.16);
+}
+
+.faceout-book-item:hover {
+  transform: translateY(-10px) scale(1.03);
+  z-index: 25;
+  box-shadow:
+    0 16px 26px -6px rgba(20, 19, 18, 0.36),
+    0 4px 10px -2px rgba(20, 19, 18, 0.20);
+}
+
 /* Animasi & Transisi Lembut */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {

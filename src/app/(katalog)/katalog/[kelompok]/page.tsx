@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { buku, kategori, eksemplar } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { BookCatalogGrid, ItemKatalogPublik } from "@/components/ui/BookCatalogGrid";
+import { ItemKatalogPublik } from "@/components/ui/BookCatalogGrid";
+import { BookshelfCatalog } from "@/components/ui/BookshelfCatalog";
 import { ArrowLeft, BookOpen } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -190,7 +191,12 @@ export default async function KatalogKelompokPage({
           </Link>
         </div>
       ) : (
-        <BookCatalogGrid items={daftarBuku} />
+        <BookshelfCatalog
+          items={daftarBuku}
+          defaultViewMode="spines"
+          showGroupFilter={false}
+          judulLemari={`Lemari ${namaKelompok}`}
+        />
       )}
     </div>
   );
