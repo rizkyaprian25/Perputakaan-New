@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { QrCode, CheckCircle2, AlertCircle, Clock, Send, UserCheck, Sparkles, Camera, CameraOff } from "lucide-react";
 import { QrCameraScanner } from "@/components/ui/QrCameraScanner";
+import { siarkanSinkronisasiPwa } from "@/components/ui/PwaSyncProvider";
 
 interface KunjunganItem {
   id: string;
@@ -86,6 +87,16 @@ export default function KioskPage() {
 
   useEffect(() => {
     muatFeedTerakhir();
+
+    // Dengarkan sinyal sinkronisasi PWA lintas jendela/tab
+    const handlePwaMutation = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.topik === "presensi" || detail.topik === "anggota") {
+        muatFeedTerakhir();
+      }
+    };
+    window.addEventListener("netri:data-mutated", handlePwaMutation);
+    return () => window.removeEventListener("netri:data-mutated", handlePwaMutation);
   }, []);
 
   // Update Jam Real-Time WIB
@@ -152,8 +163,9 @@ export default function KioskPage() {
         jam: hasil.jam,
       });
 
-      // Muat ulang live feed kehadiran
+      // Muat ulang live feed kehadiran & siarkan ke seluruh jendela PWA
       await muatFeedTerakhir();
+      siarkanSinkronisasiPwa("presensi", `Kehadiran ${hasil.nama} tercatat`);
       setNomorInduk("");
 
       // Kembalikan ke mode normal setelah 2 detik (2000 ms)

@@ -30,6 +30,7 @@ import {
   Layers,
   ExternalLink,
 } from "lucide-react";
+import { siarkanSinkronisasiPwa } from "@/components/ui/PwaSyncProvider";
 
 const BARIS_PER_HALAMAN = 25;
 
@@ -123,6 +124,15 @@ export default function AdminAnggotaPage() {
 
   useEffect(() => {
     muatData();
+
+    const handlePwaMutation = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.topik === "anggota" || detail.topik === "sirkulasi" || detail.topik === "presensi") {
+        muatData();
+      }
+    };
+    window.addEventListener("netri:data-mutated", handlePwaMutation);
+    return () => window.removeEventListener("netri:data-mutated", handlePwaMutation);
   }, []);
 
   // Ekstrak daftar kelas unik dari database
@@ -200,6 +210,7 @@ export default function AdminAnggotaPage() {
       tampilkanToast(json.pesan, "sukses");
       setModalTambahBuka(false);
       muatData();
+      siarkanSinkronisasiPwa("anggota", `Anggota baru ${formNama.trim()} ditambahkan`);
 
       setFormNis("");
       setFormNama("");
@@ -249,6 +260,7 @@ export default function AdminAnggotaPage() {
       tampilkanToast(json.pesan, "sukses");
       setModalEditBuka(false);
       muatData();
+      siarkanSinkronisasiPwa("anggota", `Data anggota ${editNama.trim()} diperbarui`);
     } catch (err: any) {
       tampilkanToast(err.message, "error");
     } finally {
@@ -359,6 +371,7 @@ export default function AdminAnggotaPage() {
       setHasilSyncModal(json.data);
       tampilkanToast(json.pesan, "sukses");
       muatData();
+      siarkanSinkronisasiPwa("anggota", `Sinkronisasi Netri SMS selesai`);
     } catch (err: any) {
       tampilkanToast(err.message, "error");
     } finally {

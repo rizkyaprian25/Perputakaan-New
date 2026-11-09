@@ -23,6 +23,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { QrCameraScanner } from "@/components/ui/QrCameraScanner";
+import { siarkanSinkronisasiPwa } from "@/components/ui/PwaSyncProvider";
 
 interface AnggotaAktif {
   id: string;
@@ -145,6 +146,16 @@ export default function SirkulasiWorkstationPage() {
 
   useEffect(() => {
     muatPinjamanAktif();
+
+    // Dengarkan sinyal sinkronisasi PWA dari jendela lain
+    const handlePwaMutation = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.topik === "sirkulasi" || detail.topik === "buku" || detail.topik === "anggota") {
+        muatPinjamanAktif();
+      }
+    };
+    window.addEventListener("netri:data-mutated", handlePwaMutation);
+    return () => window.removeEventListener("netri:data-mutated", handlePwaMutation);
   }, [muatPinjamanAktif]);
 
   useEffect(() => {
@@ -299,6 +310,7 @@ export default function SirkulasiWorkstationPage() {
       setInputAnggota("");
       setInputBuku("");
       muatPinjamanAktif();
+      siarkanSinkronisasiPwa("sirkulasi", `${json.data.jumlahBuku} buku dipinjam`);
     } catch (err: any) {
       tampilkanNotif(err.message, "error");
     } finally {
@@ -332,6 +344,7 @@ export default function SirkulasiWorkstationPage() {
         "sukses"
       );
       muatPinjamanAktif();
+      siarkanSinkronisasiPwa("sirkulasi", `Buku ${hasil.kodeEksemplar} dikembalikan`);
     } catch (err: any) {
       tampilkanNotif(err.message, "error");
     } finally {
@@ -365,6 +378,7 @@ export default function SirkulasiWorkstationPage() {
         "sukses"
       );
       muatPinjamanAktif();
+      siarkanSinkronisasiPwa("sirkulasi", `Masa pinjam ${json.data.judul} diperpanjang`);
     } catch (err: any) {
       tampilkanNotif(err.message, "error");
     } finally {

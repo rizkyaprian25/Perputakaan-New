@@ -1,8 +1,8 @@
 {
-  "name": "bilik-baca",
+  "name": "perpustakaan-netri",
   "version": "1.0.0",
   "private": true,
-  "description": "Sistem Informasi & Manajemen Perpustakaan Sekolah - Bilik Baca",
+  "description": "Sistem Informasi, Katalog, Presensi Kiosk & Sirkulasi Perpustakaan NETRI",
   "scripts": {
     "dev": "next dev",
     "dev:3001": "next dev -p 3001",

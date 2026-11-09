@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { BookSpineTick } from "@/components/ui/BookSpineTick";
 import { BookCover } from "@/components/ui/BookCover";
+import { siarkanSinkronisasiPwa } from "@/components/ui/PwaSyncProvider";
 
 export default function AdminBukuPage() {
   const [daftarBuku, setDaftarBuku] = useState<any[]>([]);
@@ -122,6 +123,15 @@ export default function AdminBukuPage() {
 
   useEffect(() => {
     muatData();
+
+    const handlePwaMutation = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.topik === "buku" || detail.topik === "sirkulasi") {
+        muatData();
+      }
+    };
+    window.addEventListener("netri:data-mutated", handlePwaMutation);
+    return () => window.removeEventListener("netri:data-mutated", handlePwaMutation);
   }, []);
 
   // Filter buku secara instan di klien
@@ -287,6 +297,7 @@ export default function AdminBukuPage() {
       tampilkanToast(json.pesan, "sukses");
       setModalFormBuka(false);
       await muatData();
+      siarkanSinkronisasiPwa("buku", `Katalog '${formJudul.trim()}' diperbarui`);
     } catch (err: any) {
       tampilkanToast(err.message, "error");
     } finally {
@@ -372,6 +383,7 @@ export default function AdminBukuPage() {
       tampilkanToast(json.pesan, "sukses");
       await bukaModalEksemplar(detailBukuAktif, false);
       await muatData();
+      siarkanSinkronisasiPwa("buku", `Eksemplar baru ditambahkan`);
     } catch (err: any) {
       tampilkanToast(err.message, "error");
     } finally {
@@ -402,6 +414,7 @@ export default function AdminBukuPage() {
       tampilkanToast(json.pesan, "sukses");
       await bukaModalEksemplar(detailBukuAktif, false);
       await muatData();
+      siarkanSinkronisasiPwa("buku", `Eksemplar baru ditambahkan`);
     } catch (err: any) {
       tampilkanToast(err.message, "error");
     }
@@ -422,6 +435,7 @@ export default function AdminBukuPage() {
       tampilkanToast(json.pesan, "sukses");
       setBukuAkanDihapus(null);
       await muatData();
+      siarkanSinkronisasiPwa("buku", `Koleksi buku diperbarui`);
     } catch (err: any) {
       tampilkanToast(err.message, "error");
     } finally {

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Newsreader, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { PwaSyncProvider } from "@/components/ui/PwaSyncProvider";
 import "./globals.css";
 
 // Tipografi Editorial Literasi: Newsreader (Variable Serif Font)
@@ -27,8 +28,24 @@ export const metadata: Metadata = {
   title: "Perpustakaan NETRI — Sistem Katalog, Presensi & Sirkulasi Sekolah",
   description:
     "Katalog buku pelajaran & literasi Perpustakaan NETRI, anjungan presensi mandiri siswa, dan workstation sirkulasi peminjaman cepat.",
+  applicationName: "Perpustakaan NETRI",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Perpustakaan NETRI",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
@@ -36,7 +53,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#FBF9F5",
+  themeColor: "#141312",
 };
 
 export default function RootLayout({
@@ -49,30 +66,8 @@ export default function RootLayout({
       lang="id"
       className={`${newsreader.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
     >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Isolasi Origin: Bersihkan Service Worker dan Cache Storage dari aplikasi lain pada localhost (mis. PWA mystrava)
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for (var r of registrations) {
-                    r.unregister();
-                  }
-                });
-              }
-              if (typeof window !== 'undefined' && 'caches' in window) {
-                caches.keys().then(function(keys) {
-                  for (var k of keys) {
-                    caches.delete(k);
-                  }
-                });
-              }
-            `,
-          }}
-        />
-      </head>
       <body className="antialiased selection:bg-ink selection:text-paper font-sans">
+        <PwaSyncProvider />
         {children}
       </body>
     </html>
