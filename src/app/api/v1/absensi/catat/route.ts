@@ -1,16 +1,15 @@
 /**
  * Perpustakaan NETRI - API Pencatatan Presensi Kiosk Mandiri
- * Mendukung scan QR kartu siswa/guru dan input manual NIS/NIP.
+ * Mendukung scan QR kartu siswa/guru (segala variasi huruf besar/kecil/simbol) dan input manual NIS/NIP/Nama.
  * Idempoten: Tidak membuat baris ganda jika siswa scan berulang kali dalam 1 hari.
  */
 
 import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { anggota, kunjungan } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { responSukses, responGalat } from "@/lib/api-response";
-import { AWALAN_QR } from "@/contracts/konstanta";
 import { tulisLogAudit } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
@@ -22,23 +21,37 @@ export async function POST(req: NextRequest) {
       return responGalat("Data pemindaian atau nomor induk tidak boleh kosong", 400);
     }
 
-    let member = null;
-    let metode: "qr" | "manual" = "manual";
+    const adalahFormatQr = /^pus1[:;_-]a[:;_-]/i.test(rawInput);
+    const inputBersih = rawInput.replace(/^pus1[:;_-]a[:;_-]/i, "").trim();
 
-    // 1. Cek apakah format QR Anggota: PUS1:A:<token>
-    if (rawInput.startsWith(AWALAN_QR.ANGGOTA)) {
-      const qrToken = rawInput.replace(AWALAN_QR.ANGGOTA, "").trim();
-      metode = "qr";
+    // Cari anggota melalui qr_token, nomor_induk (NIS/NIP), atau id anggota
+    let member = await db.query.anggota.findFirst({
+      where: or(
+        eq(anggota.qrToken, inputBersih),
+        eq(anggota.nomorInduk, inputBersih),
+        eq(anggota.id, inputBersih),
+        eq(anggota.qrToken, rawInput),
+        eq(anggota.nomorInduk, rawInput)
+      ),
+    });
+
+    if (!member && inputBersih.length >= 2) {
+      const qLower = inputBersih.toLowerCase();
       member = await db.query.anggota.findFirst({
-        where: eq(anggota.qrToken, qrToken),
-      });
-    } else {
-      // 2. Ketik Manual NIS / NIP
-      metode = "manual";
-      member = await db.query.anggota.findFirst({
-        where: eq(anggota.nomorInduk, rawInput),
+        where: and(
+          eq(anggota.status, "aktif"),
+          or(
+            sql`LOWER(${anggota.qrToken}) = ${qLower}`,
+            sql`LOWER(${anggota.nomorInduk}) = ${qLower}`
+          )
+        ),
       });
     }
+
+    const metode: "qr" | "manual" =
+      adalahFormatQr || (member && member.qrToken.toLowerCase() === inputBersih.toLowerCase())
+        ? "qr"
+        : "manual";
 
     // Jika anggota tidak ditemukan atau berstatus nonaktif
     if (!member || member.status !== "aktif") {

@@ -6,12 +6,10 @@
  */
 
 const CACHE_PREFIX = "perpustakaan-netri-";
-const CACHE_VERSION = "v2.0.0";
+const CACHE_VERSION = "v2.2.0";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 
 const PRECACHE_ASSETS = [
-  "/",
-  "/kiosk",
   "/manifest.webmanifest",
   "/icon-192.png",
   "/icon-512.png",
@@ -66,12 +64,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategi untuk Aset Statis (ikon, gambar, font, bundle statis): Stale-While-Revalidate
+  // Strategi untuk Aset Statis Gambar/Ikon saja (JANGAN cache bundle JS Next.js agar pembaruan kode langsung aktif):
   if (
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.endsWith(".png") ||
     url.pathname.endsWith(".svg") ||
-    url.pathname.endsWith(".ico")
+    url.pathname.endsWith(".ico") ||
+    url.pathname.endsWith(".webp")
   ) {
     event.respondWith(
       caches.open(CACHE_NAME).then(async (cache) => {

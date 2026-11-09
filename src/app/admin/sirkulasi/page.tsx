@@ -170,10 +170,80 @@ export default function SirkulasiWorkstationPage() {
     }
   }, [tabAktif, anggotaPeminjam]);
 
-  // 1. Cari Anggota (Scan Kartu QR atau Ketik NIS)
+  // Listener global pemindai QR/Barcode USB (Keyboard Wedge) ketika kursor sedang tidak fokus di <input>
+  useEffect(() => {
+    let buffer = "";
+    let lastKeyTime = 0;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastKeyTime > 120) {
+        buffer = "";
+      }
+      lastKeyTime = now;
+
+      if (e.key === "Enter") {
+        const hasilScan = buffer.trim();
+        buffer = "";
+        if (hasilScan.length >= 3) {
+          e.preventDefault();
+          if (/^pus1[:;_-]a[:;_-]/i.test(hasilScan)) {
+            prosesCariAnggota(hasilScan);
+          } else if (/^pus1[:;_-]b[:;_-]/i.test(hasilScan) || /^bb[-_]\d+/i.test(hasilScan)) {
+            if (tabAktif === "kembali") {
+              prosesKembalikanKode(hasilScan);
+            } else {
+              prosesTambahBuku(hasilScan);
+            }
+          } else if (tabAktif === "kembali") {
+            prosesKembalikanKode(hasilScan);
+          } else if (!anggotaPeminjam) {
+            prosesCariAnggota(hasilScan);
+          } else {
+            prosesTambahBuku(hasilScan);
+          }
+        }
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  });
+
+  // 1. Cari Anggota (Scan Kartu QR, Ketik NIS, atau Ketik Nama Siswa)
   const prosesCariAnggota = async (kodeOrNis: string) => {
     const queryBersih = kodeOrNis.trim();
     if (!queryBersih || loadingAnggota) return;
+
+    // Jika tanpa sengaja stiker QR buku (PUS1:B:... / BB-...) dipindai ke kolom siswa:
+    if (/^pus1[:;_-]b[:;_-]/i.test(queryBersih) || /^bb[-_]\d+/i.test(queryBersih)) {
+      if (anggotaPeminjam) {
+        setInputAnggota("");
+        await prosesTambahBuku(queryBersih);
+        return;
+      }
+      tampilkanNotif(
+        "Itu adalah Stiker QR Buku. Silakan scan Kartu QR Siswa atau ketik NIS terlebih dahulu!",
+        "error"
+      );
+      return;
+    }
 
     setLoadingAnggota(true);
     setNotif(null);
@@ -209,6 +279,14 @@ export default function SirkulasiWorkstationPage() {
     const kodeBersih = kodeBuku.trim();
     if (!kodeBersih || loadingBuku) return;
 
+    // Jika pengguna tanpa sengaja memindai Kartu QR Siswa (PUS1:A:...) di kolom buku:
+    // otomatis ganti/pilih siswa tersebut!
+    if (/^pus1[:;_-]a[:;_-]/i.test(kodeBersih)) {
+      setInputBuku("");
+      await prosesCariAnggota(kodeBersih);
+      return;
+    }
+
     if (!anggotaPeminjam) {
       tampilkanNotif("Scan atau pilih kartu siswa peminjam terlebih dahulu!", "error");
       return;
@@ -219,7 +297,14 @@ export default function SirkulasiWorkstationPage() {
       return;
     }
 
-    if (keranjangBuku.some((b) => b.kode.toLowerCase() === kodeBersih.toLowerCase())) {
+    const kodeNormal = kodeBersih.replace(/^pus1[:;_-]b[:;_-]/i, "").trim().toLowerCase();
+    if (
+      keranjangBuku.some(
+        (b) =>
+          b.kode.toLowerCase() === kodeNormal ||
+          b.eksemplarId.toLowerCase() === kodeNormal
+      )
+    ) {
       tampilkanNotif("Buku ini sudah ada di dalam keranjang!", "error");
       setInputBuku("");
       return;
@@ -242,9 +327,14 @@ export default function SirkulasiWorkstationPage() {
         throw new Error(json.data.alasanTolak || "Buku tidak tersedia untuk dipinjam");
       }
 
-      setKeranjangBuku((prev) => [...prev, json.data]);
+      setKeranjangBuku((prev) => {
+        if (prev.some((b) => b.eksemplarId === json.data.eksemplarId)) {
+          return prev;
+        }
+        return [...prev, json.data];
+      });
       setInputBuku("");
-      tampilkanNotif(`Buku '${json.data.judul}' dimasukkan ke keranjang`, "sukses");
+      tampilkanNotif(`Buku '${json.data.judul}' (${json.data.kode}) dimasukkan ke keranjang`, "sukses");
     } catch (err: any) {
       tampilkanNotif(err.message, "error");
     } finally {
@@ -605,18 +695,17 @@ export default function SirkulasiWorkstationPage() {
                   onChange={(e) => setInputBuku(e.target.value)}
                   placeholder={
                     anggotaPeminjam
-                      ? "Scan Barcode/QR Eksemplar Buku (misal: BB-NVL-0001)..."
-                      : "Pilih siswa terlebih dahulu di sisi kiri..."
+                      ? "Scan QR/Barcode, ketik Kode (BB-000001), atau Judul Buku..."
+                      : "Pilih siswa terlebih dahulu (atau scan QR siswa/buku lewat tombol kamera)..."
                   }
                   disabled={!anggotaPeminjam || loadingBuku}
                   className="flex-1 px-4 py-2.5 rounded-md border border-line bg-white font-sans text-sm focus:border-ink min-h-[44px] disabled:bg-paper-sunken/40"
                 />
                 <button
                   type="button"
-                  disabled={!anggotaPeminjam}
-                  onClick={() => setModalKamera("buku")}
-                  title="Scan Buku Lewat Kamera Webcam"
-                  className="px-3 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[44px] disabled:opacity-50"
+                  onClick={() => setModalKamera(anggotaPeminjam ? "buku" : "anggota")}
+                  title="Scan Lewat Kamera Webcam"
+                  className="px-3 py-2.5 rounded-md border border-line bg-surface hover:bg-paper-sunken text-ink text-xs font-semibold min-h-[44px]"
                 >
                   <Camera className="w-4 h-4 text-group-pelajaran" />
                 </button>

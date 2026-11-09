@@ -1,6 +1,7 @@
 /**
  * Perpustakaan NETRI - API Transaksi Pengembalian Buku
  * Mengubah status eksemplar menjadi 'tersedia' dan mencatat waktu pengembalian.
+ * Mendukung pemindaian QR (PUS1:B:...), kode eksemplar (BB-000001 / 1), ID eksemplar, maupun ISBN/Judul buku.
  */
 
 import { NextRequest } from "next/server";
@@ -8,7 +9,6 @@ import { pool } from "@/db";
 import { KembaliBukuSkema } from "@/contracts/skema";
 import { responSukses, responGalat } from "@/lib/api-response";
 import { verifikasiAkses } from "@/lib/auth";
-import { AWALAN_QR } from "@/contracts/konstanta";
 
 export async function POST(req: NextRequest) {
   const auth = await verifikasiAkses(["admin", "petugas"]);
@@ -26,26 +26,51 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let kode = parse.data.kodeEksemplar.trim();
-  if (kode.startsWith(AWALAN_QR.BUKU)) {
-    kode = kode.replace(AWALAN_QR.BUKU, "").trim();
+  const rawKode = parse.data.kodeEksemplar.trim();
+
+  // Normalisasi awalan QR Buku (PUS1:B:, pus1:b:, PUS1;B;)
+  let kode = rawKode.replace(/^pus1[:;_-]b[:;_-]/i, "").trim();
+  if (/^bb[_\s]\d+/i.test(kode)) {
+    kode = kode.replace(/^bb[_\s]/i, "BB-").toUpperCase();
   }
+  const kandidatPadding =
+    /^\d{1,6}$/.test(kode) ? `BB-${kode.padStart(6, "0")}` : kode.toUpperCase();
 
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    // 1. Cari eksemplar dan pinjaman aktifnya
-    const [rows]: any = await connection.query(
+    // 1. Cari eksemplar berdasarkan kode / ID dan pinjaman aktifnya
+    let [rows]: any = await connection.query(
       `SELECT e.id as eksemplar_id, e.kode, b.judul, p.id as peminjaman_id, p.jatuh_tempo, a.nama as nama_peminjam, a.nomor_induk
        FROM eksemplar e
        JOIN buku b ON e.buku_id = b.id
        LEFT JOIN peminjaman p ON e.id = p.eksemplar_id AND p.dikembalikan_pada IS NULL
        LEFT JOIN anggota a ON p.anggota_id = a.id
-       WHERE e.kode = ? FOR UPDATE`,
-      [kode]
+       WHERE LOWER(e.kode) = LOWER(?) OR e.kode = ? OR e.id = ?
+       ORDER BY (p.id IS NOT NULL) DESC
+       LIMIT 1 FOR UPDATE`,
+      [kode, kandidatPadding, kode]
     );
+
+    // 2. Fallback jika pengguna memindai ISBN atau mengetik judul buku yang sedang dipinjam
+    if ((!rows || rows.length === 0) && kode.length >= 3) {
+      const qIsbn = kode.replace(/[-\s]+/g, "").toLowerCase();
+      const [rowsByBook]: any = await connection.query(
+        `SELECT e.id as eksemplar_id, e.kode, b.judul, p.id as peminjaman_id, p.jatuh_tempo, a.nama as nama_peminjam, a.nomor_induk
+         FROM eksemplar e
+         JOIN buku b ON e.buku_id = b.id
+         LEFT JOIN peminjaman p ON e.id = p.eksemplar_id AND p.dikembalikan_pada IS NULL
+         LEFT JOIN anggota a ON p.anggota_id = a.id
+         WHERE REPLACE(REPLACE(LOWER(COALESCE(b.isbn, '')), '-', ''), ' ', '') = ?
+            OR LOWER(b.judul) = LOWER(?)
+         ORDER BY (p.id IS NOT NULL) DESC
+         LIMIT 1 FOR UPDATE`,
+        [qIsbn, kode]
+      );
+      rows = rowsByBook;
+    }
 
     if (!rows || rows.length === 0) {
       await connection.rollback();
@@ -53,11 +78,12 @@ export async function POST(req: NextRequest) {
     }
 
     const item = rows[0];
+    const kodeFinal = item.kode;
 
     if (!item.peminjaman_id) {
       await connection.rollback();
       return responGalat(
-        `Buku '${item.judul}' (${kode}) saat ini tidak dalam status dipinjam (sudah ada di rak).`,
+        `Buku '${item.judul}' (${kodeFinal}) saat ini tidak dalam status dipinjam (sudah ada di rak).`,
         400
       );
     }
@@ -91,7 +117,7 @@ export async function POST(req: NextRequest) {
         auth.user.id,
         item.peminjaman_id,
         JSON.stringify({
-          kodeEksemplar: kode,
+          kodeEksemplar: kodeFinal,
           judul: item.judul,
           namaPeminjam: item.nama_peminjam,
           terlambat,
@@ -104,7 +130,7 @@ export async function POST(req: NextRequest) {
 
     return responSukses(
       {
-        kodeEksemplar: kode,
+        kodeEksemplar: kodeFinal,
         judul: item.judul,
         namaPeminjam: item.nama_peminjam,
         nomorInduk: item.nomor_induk,

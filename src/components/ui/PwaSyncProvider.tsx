@@ -100,7 +100,7 @@ export function PwaSyncProvider() {
         if ("caches" in window) {
           const cacheKeys = await caches.keys();
           for (const key of cacheKeys) {
-            if (!key.startsWith("perpustakaan-netri-")) {
+            if (key !== "perpustakaan-netri-v2.2.0") {
               await caches.delete(key);
             }
           }

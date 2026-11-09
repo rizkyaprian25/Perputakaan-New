@@ -1,13 +1,13 @@
 /**
  * Perpustakaan NETRI - API Pencarian Profil Anggota untuk Meja Sirkulasi
+ * Mendukung pemindaian QR (PUS1:A:...), token QR mentah, Nomor Induk (NIS/NIP), ID anggota, maupun Nama Siswa.
  */
 
 import { NextRequest } from "next/server";
 import { db } from "@/db";
 import { anggota, peminjaman, buku, eksemplar, pengaturan } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { responSukses, responGalat } from "@/lib/api-response";
-import { AWALAN_QR } from "@/contracts/konstanta";
 import { verifikasiAkses } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -25,23 +25,46 @@ export async function GET(req: NextRequest) {
     return responGalat("Parameter pencarian anggota tidak boleh kosong", 400);
   }
 
-  let member = null;
+  // Tolak ramah jika pengguna tanpa sengaja memindai stiker QR Buku ke kotak siswa
+  if (/^pus1[:;_-]b[:;_-]/i.test(rawQ) || /^bb[-_]\d+/i.test(rawQ)) {
+    return responGalat(
+      "Kode yang dipindai adalah Stiker Buku. Silakan scan Kartu QR Siswa terlebih dahulu.",
+      400
+    );
+  }
 
-  // Cek apakah scan kartu QR (PUS1:A:...)
-  if (rawQ.startsWith(AWALAN_QR.ANGGOTA)) {
-    const qrToken = rawQ.replace(AWALAN_QR.ANGGOTA, "").trim();
+  // Bersihkan awalan QR anggota (misal PUS1:A:, pus1:a:, PUS1;A;) bila ada
+  const qBersih = rawQ.replace(/^pus1[:;_-]a[:;_-]/i, "").trim();
+
+  // 1. Cari kecocokan presisi pada qr_token, nomor_induk (NIS/NIP), atau id anggota
+  let member = await db.query.anggota.findFirst({
+    where: or(
+      eq(anggota.qrToken, qBersih),
+      eq(anggota.nomorInduk, qBersih),
+      eq(anggota.id, qBersih),
+      eq(anggota.qrToken, rawQ),
+      eq(anggota.nomorInduk, rawQ)
+    ),
+  });
+
+  // 2. Jika belum ketemu, cari berdasarkan kecocokan case-insensitive atau nama siswa aktif
+  if (!member && qBersih.length >= 2) {
+    const qLower = qBersih.toLowerCase();
     member = await db.query.anggota.findFirst({
-      where: eq(anggota.qrToken, qrToken),
-    });
-  } else {
-    // Cari via Nomor Induk (NIS / NIP)
-    member = await db.query.anggota.findFirst({
-      where: eq(anggota.nomorInduk, rawQ),
+      where: and(
+        eq(anggota.status, "aktif"),
+        or(
+          sql`LOWER(${anggota.qrToken}) = ${qLower}`,
+          sql`LOWER(${anggota.nomorInduk}) = ${qLower}`,
+          sql`LOWER(${anggota.nama}) = ${qLower}`,
+          sql`LOWER(${anggota.nama}) LIKE ${`%${qLower}%`}`
+        )
+      ),
     });
   }
 
   if (!member) {
-    return responGalat("Anggota dengan kartu atau NIS/NIP tersebut tidak ditemukan.", 404);
+    return responGalat("Anggota dengan kartu QR, NIS, atau nama tersebut tidak ditemukan.", 404);
   }
 
   if (member.status !== "aktif") {

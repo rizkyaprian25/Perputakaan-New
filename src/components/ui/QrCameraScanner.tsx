@@ -2,9 +2,9 @@
 
 /**
  * Perpustakaan NETRI - Komponen Pemindai Kamera Webcam Live (QR & Barcode)
- * Menggunakan hibrida BarcodeDetector API native + jsQR Canvas Engine sehingga
- * bekerja 100% di seluruh browser Windows/Android/iOS tanpa peringatan kompatibilitas,
- * bebas kedip (zero-flicker), dan bebas Console AbortError.
+ * Menggunakan hibrida BarcodeDetector API native + jsQR Dual-Pass (Center-Crop HD + Full-Frame)
+ * sehingga membaca QR Code kartu siswa & stiker buku dengan cepat di semua browser,
+ * bebas kedip (zero-flicker), bebas Console AbortError, dan tanpa teks peringatan apa pun.
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -29,7 +29,8 @@ export function QrCameraScanner({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasFullRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasCropRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<any>(null);
   const timerScanRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -121,14 +122,14 @@ export function QrCameraScanner({
     }
 
     try {
-      // Coba resolusi ideal HD terlebih dahulu, fallback ke default video: true jika webcam PC menolak constraint
+      // Minta resolusi HD (1280x720) agar modul QR kecil pada kartu siswa/stiker buku terlihat tajam
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: "environment" },
-            width: { ideal: 640 },
-            height: { ideal: 480 },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
           },
           audio: false,
         });
@@ -191,7 +192,7 @@ export function QrCameraScanner({
       setAktif(true);
       setSedangMemuat(false);
 
-      // Loop pemindaian cerdas setiap 180 ms (BarcodeDetector native + jsQR Canvas fallback)
+      // Loop pemindaian cerdas setiap 140 ms (BarcodeDetector native + Dual-Pass jsQR Canvas)
       timerScanRef.current = setInterval(async () => {
         const v = videoRef.current;
         if (!v || v.readyState < 2 || v.videoWidth === 0 || v.videoHeight === 0) {
@@ -212,27 +213,60 @@ export function QrCameraScanner({
           }
         }
 
-        // 2. Gunakan mesin jsQR berbasis Canvas 2D (bekerja di semua browser PC & Mobile)
+        // 2. Pass 1 jsQR: Center-Crop Resolusi Asli 1:1 (fokus pada area kotak tengah pemindai)
+        //    Sangat efektif membaca QR code berukuran 21mm-24mm pada kartu siswa & stiker buku!
         if (!terdeteksi) {
           try {
-            if (!canvasRef.current) {
-              canvasRef.current = document.createElement("canvas");
+            if (!canvasCropRef.current) {
+              canvasCropRef.current = document.createElement("canvas");
             }
-            const canvas = canvasRef.current;
-            const targetW = Math.min(480, v.videoWidth);
-            const targetH = Math.round((v.videoHeight / v.videoWidth) * targetW);
-            if (canvas.width !== targetW) canvas.width = targetW;
-            if (canvas.height !== targetH) canvas.height = targetH;
+            const cropCanvas = canvasCropRef.current;
+            const minDim = Math.min(v.videoWidth, v.videoHeight);
+            const cropSize = Math.max(240, Math.round(minDim * 0.68));
+            const sx = Math.round((v.videoWidth - cropSize) / 2);
+            const sy = Math.round((v.videoHeight - cropSize) / 2);
 
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-            if (ctx) {
-              ctx.drawImage(v, 0, 0, targetW, targetH);
-              const imageData = ctx.getImageData(0, 0, targetW, targetH);
-              const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: "dontInvert",
+            const outSize = Math.min(520, cropSize);
+            if (cropCanvas.width !== outSize) cropCanvas.width = outSize;
+            if (cropCanvas.height !== outSize) cropCanvas.height = outSize;
+
+            const ctxCrop = cropCanvas.getContext("2d", { willReadFrequently: true });
+            if (ctxCrop) {
+              ctxCrop.drawImage(v, sx, sy, cropSize, cropSize, 0, 0, outSize, outSize);
+              const imgCrop = ctxCrop.getImageData(0, 0, outSize, outSize);
+              const codeCrop = jsQR(imgCrop.data, imgCrop.width, imgCrop.height, {
+                inversionAttempts: "attemptBoth",
               });
-              if (code && code.data && code.data.trim()) {
-                terdeteksi = code.data.trim();
+              if (codeCrop && codeCrop.data && codeCrop.data.trim()) {
+                terdeteksi = codeCrop.data.trim();
+              }
+            }
+          } catch {
+            // Abaikan
+          }
+        }
+
+        // 3. Pass 2 jsQR: Full-Frame (jika kartu QR berada sedikit di pinggir luar kotak tengah)
+        if (!terdeteksi) {
+          try {
+            if (!canvasFullRef.current) {
+              canvasFullRef.current = document.createElement("canvas");
+            }
+            const fullCanvas = canvasFullRef.current;
+            const targetW = Math.min(640, v.videoWidth);
+            const targetH = Math.round((v.videoHeight / v.videoWidth) * targetW);
+            if (fullCanvas.width !== targetW) fullCanvas.width = targetW;
+            if (fullCanvas.height !== targetH) fullCanvas.height = targetH;
+
+            const ctxFull = fullCanvas.getContext("2d", { willReadFrequently: true });
+            if (ctxFull) {
+              ctxFull.drawImage(v, 0, 0, targetW, targetH);
+              const imgFull = ctxFull.getImageData(0, 0, targetW, targetH);
+              const codeFull = jsQR(imgFull.data, imgFull.width, imgFull.height, {
+                inversionAttempts: "attemptBoth",
+              });
+              if (codeFull && codeFull.data && codeFull.data.trim()) {
+                terdeteksi = codeFull.data.trim();
               }
             }
           } catch {
@@ -244,7 +278,7 @@ export function QrCameraScanner({
           const now = Date.now();
           if (
             terakhirScannedRef.current.kode === terdeteksi &&
-            now - terakhirScannedRef.current.waktu < 2200
+            now - terakhirScannedRef.current.waktu < 1800
           ) {
             return;
           }
@@ -258,7 +292,7 @@ export function QrCameraScanner({
             if (onCloseRef.current) onCloseRef.current();
           }
         }
-      }, 180);
+      }, 140);
     } catch (err: any) {
       if (mySessionId !== sessionIdRef.current || err?.name === "AbortError") {
         return;
@@ -306,7 +340,7 @@ export function QrCameraScanner({
         </div>
       )}
 
-      {/* Bingkai Target Pemindai (Scanner Reticle) */}
+      {/* Bingkai Target Pemindai (Scanner Reticle) - Bersih Tanpa Kotak Peringatan */}
       {aktif && !errorMsg && (
         <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6 z-10">
           <div className="w-52 h-52 border-2 border-white/80 rounded-2xl relative shadow-[0_0_0_9999px_rgba(0,0,0,0.42)]">

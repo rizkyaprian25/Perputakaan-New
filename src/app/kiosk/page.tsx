@@ -154,6 +154,48 @@ export default function KioskPage() {
     }
   }, [suksesState.aktif]);
 
+  // Listener global pemindai QR/Barcode USB saat kursor sedang tidak fokus di <input>
+  useEffect(() => {
+    let buffer = "";
+    let lastKeyTime = 0;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastKeyTime > 120) {
+        buffer = "";
+      }
+      lastKeyTime = now;
+
+      if (e.key === "Enter") {
+        const hasilScan = buffer.trim();
+        buffer = "";
+        if (hasilScan.length >= 2) {
+          e.preventDefault();
+          prosesCatatPresensi(hasilScan);
+        }
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  });
+
   // Handler Catat Presensi Siswa (Dapat dipanggil dari Scanner Barcode USB atau Kamera)
   const prosesCatatPresensi = async (inputStr: string) => {
     if (!inputStr.trim() || isSubmitting) return;
